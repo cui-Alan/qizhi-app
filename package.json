@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron:build": "tsc -p electron/tsconfig.json",
+    "electron:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && tsc -p electron/tsconfig.json && electron dist-electron/main.js\"",
+    "electron:dist": "next build && tsc -p electron/tsconfig.json && electron-builder --mac dmg --dir",
+    "electron:package": "next build && tsc -p electron/tsconfig.json && electron-builder --mac dmg"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -31,9 +35,25 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^10.0.3",
+    "electron": "^42.5.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.0.10"
+  },
+  "main": "dist-electron/main.js",
+  "build": {
+    "appId": "com.qizhi.app",
+    "productName": "企智 QiZhi",
+    "directories": { "output": "release" },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"],
+      "icon": "public/icon.icns"
+    },
+    "linux": { "target": ["AppImage"] }
   }
 }
