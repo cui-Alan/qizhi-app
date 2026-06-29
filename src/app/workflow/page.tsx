@@ -1,9 +1,18 @@
+"use client";
+
+import { ReactFlowProvider } from "@xyflow/react";
+import { NodePalette } from "@/components/workflow/NodePalette";
+import { FlowCanvas } from "@/components/workflow/FlowCanvas";
+import { YamlPanel } from "@/components/workflow/YamlPanel";
+
 export default function WorkflowPage() {
   return (
-    <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-      <div className="text-6xl mb-4">⚙️</div>
-      <h2 className="text-xl font-medium">工作流编排</h2>
-      <p className="text-sm mt-2">可视化工作流编辑器即将上线</p>
+    <div className="h-full flex">
+      <ReactFlowProvider>
+        <NodePalette />
+        <FlowCanvas />
+        <YamlPanel />
+      </ReactFlowProvider>
     </div>
   );
 }

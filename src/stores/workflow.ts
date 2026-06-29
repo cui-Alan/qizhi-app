@@ -1,14 +1,14 @@
 import { create } from "zustand";
-import type { WorkflowNode, WorkflowEdge } from "@/types";
+import type { Node, Edge } from "@xyflow/react";
 
 interface WorkflowState {
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
+  nodes: Node[];
+  edges: Edge[];
   selectedNodeId: string | null;
   yamlContent: string;
 
-  setNodes: (nodes: WorkflowNode[]) => void;
-  setEdges: (edges: WorkflowEdge[]) => void;
+  setNodes: (nodes: Node[]) => void;
+  setEdges: (edges: Edge[]) => void;
   setSelectedNode: (id: string | null) => void;
   setYamlContent: (yaml: string) => void;
 }
