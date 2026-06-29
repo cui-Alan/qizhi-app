@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, type DragEvent } from "react";
+import { useCallback, useRef, useEffect, type DragEvent } from "react";
 import {
   ReactFlow,
   Background,
@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import { nodeTypes } from "./nodes";
 import { useWorkflowStore } from "@/stores/workflow";
+import { graphToYaml, yamlToGraph } from "@/lib/workflow-sync";
 
 import "@xyflow/react/dist/style.css";
 
@@ -33,8 +34,10 @@ export function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const storeNodes = useWorkflowStore((s) => s.nodes);
   const storeEdges = useWorkflowStore((s) => s.edges);
+  const yamlContent = useWorkflowStore((s) => s.yamlContent);
   const setNodes = useWorkflowStore((s) => s.setNodes);
   const setEdges = useWorkflowStore((s) => s.setEdges);
+  const setYaml = useWorkflowStore((s) => s.setYamlContent);
 
   const [localNodes, setLocalNodes, onNodesChange] = useNodesState<Node>(
     storeNodes.length > 0 ? (storeNodes as Node[]) : initialNodes,
@@ -42,6 +45,33 @@ export function FlowCanvas() {
   const [localEdges, setLocalEdges, onEdgesChange] = useEdgesState<Edge>(
     storeEdges.length > 0 ? (storeEdges as Edge[]) : [],
   );
+
+  // Sync Graph → YAML (on node/edge changes)
+  const syncToYaml = useCallback(
+    (nodes: Node[], edges: Edge[]) => {
+      const yaml = graphToYaml(nodes, edges);
+      setYaml(yaml);
+      setNodes(nodes);
+      setEdges(edges as Parameters<typeof setEdges>[0]);
+    },
+    [setYaml, setNodes, setEdges],
+  );
+
+  // Listen for YAML → Graph sync
+  useEffect(() => {
+    if (!yamlContent) return;
+    // Only sync when YAML changes externally (from Monaco)
+    const currentYaml = graphToYaml(localNodes, localEdges);
+    if (yamlContent !== currentYaml) {
+      const { nodes, edges } = yamlToGraph(yamlContent);
+      if (nodes.length > 0) {
+        setLocalNodes(nodes);
+        setLocalEdges(edges);
+        setNodes(nodes);
+        setEdges(edges as Parameters<typeof setEdges>[0]);
+      }
+    }
+  }, [yamlContent]); // Only react to YAML changes
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -53,11 +83,11 @@ export function FlowCanvas() {
       };
       setLocalEdges((eds) => {
         const updated = addEdge(newEdge, eds);
-        setEdges(updated as Parameters<typeof setEdges>[0]);
+        syncToYaml(localNodes, updated);
         return updated;
       });
     },
-    [setEdges, setLocalEdges],
+    [localNodes, syncToYaml, setLocalEdges],
   );
 
   const onDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -86,11 +116,56 @@ export function FlowCanvas() {
 
       setLocalNodes((nds) => {
         const updated = [...nds, newNode];
-        setNodes(updated);
+        syncToYaml(updated, localEdges);
         return updated;
       });
     },
-    [setNodes, setLocalNodes],
+    [localEdges, syncToYaml, setLocalNodes],
+  );
+
+  // Sync on node move end — React Flow uses native DOM events
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onNodeDragStop = useCallback(
+    (_event: any, node: Node) => {
+      setLocalNodes((nds) => {
+        const updated = nds.map((n) => (n.id === node.id ? node : n));
+        syncToYaml(updated, localEdges);
+        return updated;
+      });
+    },
+    [localEdges, syncToYaml, setLocalNodes],
+  );
+
+  // Handle delete
+  const onNodesDelete = useCallback(
+    (deleted: Node[]) => {
+      setLocalNodes((nds) => {
+        const remaining = nds.filter((n) => !deleted.some((d) => d.id === n.id));
+        const remainingEdges = localEdges.filter(
+          (e) => !deleted.some((d) => d.id === e.source || d.id === e.target),
+        );
+        syncToYaml(remaining, remainingEdges);
+        return remaining;
+      });
+      setLocalEdges((eds) => {
+        const remaining = eds.filter(
+          (e) => !deleted.some((d) => d.id === e.source || d.id === e.target),
+        );
+        return remaining;
+      });
+    },
+    [localEdges, syncToYaml, setLocalEdges, setLocalNodes],
+  );
+
+  const onEdgesDelete = useCallback(
+    (deleted: Edge[]) => {
+      setLocalEdges((eds) => {
+        const remaining = eds.filter((e) => !deleted.some((d) => d.id === e.id));
+        syncToYaml(localNodes, remaining);
+        return remaining;
+      });
+    },
+    [localNodes, syncToYaml, setLocalEdges],
   );
 
   return (
@@ -101,6 +176,9 @@ export function FlowCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop as any}
+        onNodesDelete={onNodesDelete}
+        onEdgesDelete={onEdgesDelete}
         nodeTypes={nodeTypes}
         fitView
         deleteKeyCode={["Backspace", "Delete"]}
@@ -120,7 +198,7 @@ export function FlowCanvas() {
         />
         <Panel position="top-left" className="!ml-2 !mt-2">
           <span className="text-xs text-zinc-400 bg-white dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">
-            拖拽节点到画布 · Shift+Click 多选 · Delete 删除
+            拖拽节点到画布 · Shift+Click 多选 · Delete 删除 · 双向实时同步
           </span>
         </Panel>
       </ReactFlow>

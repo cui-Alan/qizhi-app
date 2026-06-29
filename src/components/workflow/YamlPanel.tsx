@@ -58,6 +58,8 @@ steps:
 export function YamlPanel() {
   const { yamlContent, setYamlContent } = useWorkflowStore();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const externalChangeRef = useRef(false);
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -67,27 +69,44 @@ export function YamlPanel() {
     }
   };
 
+  // YAML edit → store (500ms debounce)
   const handleChange = useCallback(
     (value: string | undefined) => {
-      if (value !== undefined) {
+      if (value === undefined) return;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
         setYamlContent(value);
-      }
+      }, 500);
     },
     [setYamlContent],
   );
 
+  // Graph → YAML: when yamlContent changes externally, update the editor
   useEffect(() => {
-    if (editorRef.current && yamlContent && editorRef.current.getValue() !== yamlContent) {
+    if (!editorRef.current || !yamlContent) return;
+    const editorValue = editorRef.current.getValue();
+    if (yamlContent !== editorValue) {
+      externalChangeRef.current = true;
       editorRef.current.setValue(yamlContent);
+      // Reset flag after React re-render
+      setTimeout(() => { externalChangeRef.current = false; }, 0);
     }
   }, [yamlContent]);
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   return (
     <div className="w-80 shrink-0 border-l border-zinc-200 dark:border-zinc-700 flex flex-col bg-white dark:bg-zinc-950">
-      <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
           YAML 定义
         </h3>
+        <span className="text-[10px] text-zinc-400">Graph ↔ YAML 双向同步</span>
       </div>
       <div className="flex-1">
         <Editor
