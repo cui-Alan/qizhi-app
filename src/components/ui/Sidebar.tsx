@@ -20,20 +20,10 @@ import {
   ChevronDown,
   ChevronRight,
   Layers,
+  Puzzle,
+  Plug,
+  Lightbulb,
 } from "lucide-react";
-
-const mainNav = [
-  { href: "/chat", label: "助理", icon: Bot },
-  { href: "/workflow", label: "工作流", icon: Workflow },
-  { href: "/skills", label: "技能·连接器", icon: Zap },
-  { href: "/automation", label: "自动化", icon: Clock },
-];
-
-const moreNav = [
-  { href: "/knowledge", label: "资料库·灵感", icon: Database },
-  { href: "/tasks", label: "任务", icon: CheckSquare },
-  { href: "/spaces", label: "空间", icon: Layers },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -49,6 +39,7 @@ export function Sidebar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [contextMenu, setContextMenu] = useState<string | null>(null);
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const startRename = (id: string, current: string) => {
@@ -63,6 +54,63 @@ export function Sidebar() {
     }
     setEditingId(null);
   };
+
+  const NavLink = ({
+    href,
+    icon: Icon,
+    label,
+    indent,
+  }: {
+    href: string;
+    icon: React.ElementType;
+    label: string;
+    indent?: boolean;
+  }) => {
+    const isActive = pathname.startsWith(href);
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+          indent && "ml-4",
+          isActive
+            ? "bg-zinc-200 dark:bg-zinc-700 text-blue-600 dark:text-blue-400 font-medium"
+            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+        )}
+      >
+        <Icon size={indent ? 14 : 16} />
+        <span className="hidden md:block">{label}</span>
+      </Link>
+    );
+  };
+
+  const ExpandToggle = ({
+    open,
+    setOpen,
+    icon: Icon,
+    label,
+  }: {
+    open: boolean;
+    setOpen: (v: boolean) => void;
+    icon: React.ElementType;
+    label: string;
+  }) => (
+    <button
+      onClick={() => setOpen(!open)}
+      className={cn(
+        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+        open
+          ? "text-zinc-800 dark:text-zinc-200"
+          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+      )}
+    >
+      <Icon size={16} />
+      <span className="hidden md:block flex-1">{label}</span>
+      <span className="hidden md:block">
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+      </span>
+    </button>
+  );
 
   return (
     <aside className="w-16 md:w-56 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 select-none">
@@ -164,66 +212,33 @@ export function Sidebar() {
         {/* Divider */}
         <div className="mx-3 my-1 border-t border-zinc-200 dark:border-zinc-700" />
 
-        {/* Main navigation */}
-        <nav className="px-2 space-y-0.5">
-          {mainNav.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-                  isActive
-                    ? "bg-zinc-200 dark:bg-zinc-700 text-blue-600 dark:text-blue-400 font-medium"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                )}
-              >
-                <item.icon size={16} />
-                <span className="hidden md:block">{item.label}</span>
-              </Link>
-            );
-          })}
+        {/* Navigation */}
+        <nav className="px-2 pb-2 space-y-0.5">
+          <NavLink href="/chat" icon={Bot} label="助理" />
+          <NavLink href="/workflow" icon={Workflow} label="工作流" />
 
-          {/* More: expandable */}
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={cn(
-              "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left",
-              moreOpen
-                ? "text-zinc-800 dark:text-zinc-200"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-            )}
-          >
-            <MoreHorizontal size={16} />
-            <span className="hidden md:block flex-1">更多</span>
-            <span className="hidden md:block">
-              {moreOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            </span>
-          </button>
-
-          {moreOpen && (
-            <div className="ml-4 space-y-0.5">
-              {moreNav.map((item) => {
-                const isActive = pathname.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
-                      isActive
-                        ? "bg-zinc-200 dark:bg-zinc-700 text-blue-600 dark:text-blue-400 font-medium"
-                        : "text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                    )}
-                  >
-                    <item.icon size={14} />
-                    <span className="hidden md:block">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
+          {/* 技能市场 - expandable */}
+          <ExpandToggle open={skillsOpen} setOpen={setSkillsOpen} icon={Zap} label="技能市场" />
+          {skillsOpen && (
+            <>
+              <NavLink href="/skills" icon={Puzzle} label="技能" indent />
+              <NavLink href="/connectors" icon={Plug} label="连接器" indent />
+            </>
           )}
+
+          <NavLink href="/automation" icon={Clock} label="自动化" />
+
+          {/* 更多 - expandable */}
+          <ExpandToggle open={moreOpen} setOpen={setMoreOpen} icon={MoreHorizontal} label="更多" />
+          {moreOpen && (
+            <>
+              <NavLink href="/knowledge" icon={Database} label="知识库" indent />
+              <NavLink href="/inspiration" icon={Lightbulb} label="灵感库" indent />
+            </>
+          )}
+
+          <NavLink href="/tasks" icon={CheckSquare} label="任务" />
+          <NavLink href="/spaces" icon={Layers} label="空间" />
         </nav>
       </div>
 
