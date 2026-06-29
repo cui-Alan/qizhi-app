@@ -121,6 +121,83 @@ export function graphToYaml(
   });
 }
 
+// ── Cycle detection ──
+export function detectCycle(nodes: Node[], edges: Edge[]): boolean {
+  const adj = new Map<string, string[]>();
+  nodes.forEach((n) => adj.set(n.id, []));
+  edges.forEach((e) => {
+    const deps = adj.get(e.target);
+    if (deps) deps.push(e.source);
+  });
+
+  const visited = new Set<string>();
+  const stack = new Set<string>();
+
+  function dfs(id: string): boolean {
+    if (stack.has(id)) return true;
+    if (visited.has(id)) return false;
+    visited.add(id);
+    stack.add(id);
+    const deps = adj.get(id) || [];
+    for (const dep of deps) {
+      if (dfs(dep)) return true;
+    }
+    stack.delete(id);
+    return false;
+  }
+
+  for (const id of adj.keys()) {
+    if (dfs(id)) return true;
+  }
+  return false;
+}
+
+// ── Workflow validation ──
+export function validateWorkflow(
+  nodes: Node[],
+  edges: Edge[],
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (nodes.length === 0) {
+    errors.push("工作流为空");
+    return { valid: false, errors };
+  }
+
+  const hasStart = nodes.some((n) => n.type === "start");
+  const hasEnd = nodes.some((n) => n.type === "end");
+  if (!hasStart) errors.push("缺少开始节点");
+  if (!hasEnd) errors.push("缺少结束节点");
+
+  if (detectCycle(nodes, edges)) {
+    errors.push("存在循环依赖");
+  }
+
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  edges.forEach((e) => {
+    if (!nodeIds.has(e.source)) errors.push(`边源节点不存在: ${e.source}`);
+    if (!nodeIds.has(e.target)) errors.push(`边目标节点不存在: ${e.target}`);
+  });
+
+  return { valid: errors.length === 0, errors };
+}
+
+// ── Blank workflow template ──
+export const BLANK_WORKFLOW_YAML = `name: 新建工作流
+version: "1.0"
+description: ""
+trigger:
+  type: manual
+steps:
+  - id: start_1
+    type: start
+    label: 开始
+  - id: end_1
+    type: end
+    label: 结束
+    depends_on: [start_1]
+`;
+
 // ── Level-based layout ──
 function computeLevels(steps: YamlStep[]): Map<string, number> {
   const levels = new Map<string, number>();
