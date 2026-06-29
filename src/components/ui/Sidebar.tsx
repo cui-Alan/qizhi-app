@@ -159,8 +159,8 @@ export function Sidebar() {
           </button>
         </div>
 
-        {/* Session list */}
-        <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+        {/* Session list — scrollable with max height so nav is always visible */}
+        <div className="max-h-[40%] overflow-y-auto px-2 space-y-0.5">
           {sessions.map((session) => {
             const isActive = currentSessionId === session.id;
             return (
