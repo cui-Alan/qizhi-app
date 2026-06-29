@@ -23,6 +23,12 @@ import {
   Puzzle,
   Plug,
   Lightbulb,
+  Settings,
+  User,
+  Palette,
+  Monitor,
+  Shield,
+  HelpCircle,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -41,6 +47,20 @@ export function Sidebar() {
   const [contextMenu, setContextMenu] = useState<string | null>(null);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const settingsItems = [
+    { href: "/settings/account", icon: User, label: "账户管理" },
+    { href: "/settings/appearance", icon: Palette, label: "外观" },
+    { href: "/settings/system", icon: Monitor, label: "系统设置" },
+    { href: "/settings/agent", icon: Bot, label: "智能体设置" },
+    { href: "/settings/memory", icon: Database, label: "记忆" },
+    { href: "/settings/models", icon: Zap, label: "模型" },
+    { href: "/settings/personalization", icon: Puzzle, label: "个性化" },
+    { href: "/settings/data", icon: Database, label: "数据管理" },
+    { href: "/settings/security", icon: Shield, label: "安全中心" },
+    { href: "/settings/help", icon: HelpCircle, label: "帮助与反馈" },
+  ];
 
   const startRename = (id: string, current: string) => {
     setEditingId(id);
@@ -239,6 +259,16 @@ export function Sidebar() {
 
           <NavLink href="/tasks" icon={CheckSquare} label="任务" />
           <NavLink href="/spaces" icon={Layers} label="空间" />
+
+          {/* 设置 - expandable */}
+          <ExpandToggle open={settingsOpen} setOpen={setSettingsOpen} icon={Settings} label="设置" />
+          {settingsOpen && (
+            <>
+              {settingsItems.map((item) => (
+                <NavLink key={item.href} href={item.href} icon={item.icon} label={item.label} indent />
+              ))}
+            </>
+          )}
         </nav>
       </div>
 
