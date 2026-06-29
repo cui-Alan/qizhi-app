@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createServer();
     
     const { data: sessions, error } = await supabase
-      .from("chat_sessions")
+      .from("sessions")
       .select("*")
       .order("updated_at", { ascending: false });
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const { title, model_id } = body;
 
     const { data: session, error } = await supabase
-      .from("chat_sessions")
+      .from("sessions")
       .insert({
         title: title || "新对话",
         model_id: model_id || "gpt-4o",

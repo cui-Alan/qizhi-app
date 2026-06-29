@@ -25,7 +25,7 @@ CREATE TABLE users (
 -- ============================================================
 -- 2. Chat Sessions & Messages
 -- ============================================================
-CREATE TABLE chat_sessions (
+CREATE TABLE sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL DEFAULT '新对话',
@@ -34,9 +34,9 @@ CREATE TABLE chat_sessions (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE chat_messages (
+CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
   content TEXT NOT NULL,
   tool_calls JSONB,
@@ -172,7 +172,7 @@ CREATE TABLE usage_logs (
 -- ============================================================
 -- Indexes
 -- ============================================================
-CREATE INDEX idx_chat_messages_session ON chat_messages(session_id, created_at);
+CREATE INDEX idx_messages_session ON messages(session_id, created_at);
 CREATE INDEX idx_workflow_executions_workflow ON workflow_executions(workflow_id, status);
 CREATE INDEX idx_workflow_checkpoints_execution ON workflow_checkpoints(execution_id, node_id);
 CREATE INDEX idx_workflow_approvals_execution ON workflow_approvals(execution_id, status);
@@ -184,8 +184,8 @@ CREATE INDEX idx_kb_documents_source ON kb_documents(source);
 -- RLS Policies (basic)
 -- ============================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workflow_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workflow_executions ENABLE ROW LEVEL SECURITY;
 
@@ -194,13 +194,13 @@ CREATE POLICY "Users read self" ON users
   FOR SELECT USING (auth.uid() = id);
 
 -- Chat sessions belong to user
-CREATE POLICY "Users CRUD own sessions" ON chat_sessions
+CREATE POLICY "Users CRUD own sessions" ON sessions
   FOR ALL USING (auth.uid() = user_id);
 
 -- Messages visible through session ownership
-CREATE POLICY "Users read own messages" ON chat_messages
+CREATE POLICY "Users read own messages" ON messages
   FOR SELECT USING (
-    session_id IN (SELECT id FROM chat_sessions WHERE user_id = auth.uid())
+    session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid())
   );
 
 -- Workflow definitions visible to all authenticated users (for now)

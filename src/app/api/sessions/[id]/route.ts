@@ -11,7 +11,7 @@ export async function GET(
     const supabase = await createServer();
 
     const { data: session, error } = await supabase
-      .from("chat_sessions")
+      .from("sessions")
       .select("*")
       .eq("id", id)
       .single();
@@ -44,7 +44,7 @@ export async function PATCH(
     if (model_id !== undefined) updates.model_id = model_id;
 
     const { data: session, error } = await supabase
-      .from("chat_sessions")
+      .from("sessions")
       .update(updates)
       .eq("id", id)
       .select()
@@ -75,7 +75,7 @@ export async function DELETE(
     const supabase = await createServer();
 
     const { error } = await supabase
-      .from("chat_sessions")
+      .from("sessions")
       .delete()
       .eq("id", id);
 
