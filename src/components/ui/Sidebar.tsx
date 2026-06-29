@@ -8,7 +8,6 @@ import { useChatStore } from "@/stores/chat";
 import {
   Workflow,
   Database,
-  Settings,
   Bot,
   Zap,
   CheckSquare,
@@ -17,14 +16,23 @@ import {
   MoreHorizontal,
   Trash2,
   Pencil,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  Layers,
 } from "lucide-react";
 
-const navItems = [
+const mainNav = [
+  { href: "/chat", label: "助理", icon: Bot },
   { href: "/workflow", label: "工作流", icon: Workflow },
-  { href: "/knowledge", label: "知识库", icon: Database },
-  { href: "/skills", label: "技能市场", icon: Zap },
-  { href: "/tasks", label: "任务看板", icon: CheckSquare },
-  { href: "/admin", label: "管理", icon: Settings },
+  { href: "/skills", label: "技能·连接器", icon: Zap },
+  { href: "/automation", label: "自动化", icon: Clock },
+];
+
+const moreNav = [
+  { href: "/knowledge", label: "资料库·灵感", icon: Database },
+  { href: "/tasks", label: "任务", icon: CheckSquare },
+  { href: "/spaces", label: "空间", icon: Layers },
 ];
 
 export function Sidebar() {
@@ -41,6 +49,7 @@ export function Sidebar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [contextMenu, setContextMenu] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const startRename = (id: string, current: string) => {
     setEditingId(id);
@@ -69,16 +78,16 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Session area */}
+      {/* Body */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* New Session button */}
+        {/* New Task button */}
         <div className="p-2">
           <button
             onClick={() => createSession()}
             className="w-full flex items-center justify-center md:justify-start gap-2 px-3 py-2 rounded-lg text-sm border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
           >
             <Plus size={16} />
-            <span className="hidden md:block">新建会话</span>
+            <span className="hidden md:block">新建任务</span>
           </button>
         </div>
 
@@ -128,7 +137,6 @@ export function Sidebar() {
                   </button>
                 )}
 
-                {/* Context menu */}
                 {contextMenu === session.id && (
                   <div className="absolute left-full top-0 ml-1 z-50 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[100px]">
                     <button
@@ -156,9 +164,9 @@ export function Sidebar() {
         {/* Divider */}
         <div className="mx-3 my-1 border-t border-zinc-200 dark:border-zinc-700" />
 
-        {/* Navigation area */}
-        <nav className="px-2 pb-2 space-y-0.5">
-          {navItems.map((item) => {
+        {/* Main navigation */}
+        <nav className="px-2 space-y-0.5">
+          {mainNav.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link
@@ -176,15 +184,58 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* More: expandable */}
+          <button
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={cn(
+              "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+              moreOpen
+                ? "text-zinc-800 dark:text-zinc-200"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+            )}
+          >
+            <MoreHorizontal size={16} />
+            <span className="hidden md:block flex-1">更多</span>
+            <span className="hidden md:block">
+              {moreOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </span>
+          </button>
+
+          {moreOpen && (
+            <div className="ml-4 space-y-0.5">
+              {moreNav.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                      isActive
+                        ? "bg-zinc-200 dark:bg-zinc-700 text-blue-600 dark:text-blue-400 font-medium"
+                        : "text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                    )}
+                  >
+                    <item.icon size={14} />
+                    <span className="hidden md:block">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
       </div>
 
       {/* User area */}
-      <div className="p-2 border-t border-zinc-200 dark:border-zinc-800">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+      <div className="px-2 pb-2">
+        <Link
+          href="/admin"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+        >
           <div className="w-6 h-6 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0" />
-          <span className="hidden md:block truncate">用户</span>
-        </button>
+          <span className="hidden md:block truncate">管理员</span>
+        </Link>
       </div>
     </aside>
   );
