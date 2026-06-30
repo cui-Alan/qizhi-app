@@ -222,17 +222,131 @@ function MemorySettings() {
   );
 }
 
+// ── 外观设置 ─────────────────────────────────────────────
+function AppearanceSettings() {
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark") ? "dark" : "light";
+    }
+    return "light";
+  });
+  const [fontSize, setFontSize] = useState("medium");
+
+  const toggleTheme = (t: string) => {
+    setTheme(t);
+    if (t === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">🎨 外观设置</h2>
+
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
+          <h3 className="text-sm font-medium mb-3">主题模式</h3>
+          <div className="flex gap-3">
+            {[
+              { id: "light", label: "☀️ 浅色", desc: "亮色界面" },
+              { id: "dark", label: "🌙 深色", desc: "暗色界面" },
+              { id: "system", label: "💻 跟随系统", desc: "自动切换" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => toggleTheme(t.id)}
+                className={`flex-1 p-3 rounded-xl border-2 text-left transition ${
+                  theme === t.id
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300"
+                }`}
+              >
+                <div className="text-sm font-medium">{t.label}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
+          <h3 className="text-sm font-medium mb-3">字体大小</h3>
+          <div className="flex gap-2">
+            {(["small", "medium", "large"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setFontSize(s)}
+                className={`px-4 py-2 rounded-lg text-sm transition ${
+                  fontSize === s
+                    ? "bg-blue-600 text-white"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600"
+                }`}
+              >
+                {s === "small" ? "小" : s === "medium" ? "中" : "大"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 模型设置 ─────────────────────────────────────────────
+function ModelSettings() {
+  const [providers] = useState([
+    { id: "1", name: "oMLX 本地", type: "ollama", model: "qwen3.6-27b-instruct-q4_km", status: "active", baseUrl: "http://127.0.0.1:8000" },
+    { id: "2", name: "OpenAI", type: "openai", model: "gpt-4o", status: "inactive", baseUrl: "https://api.openai.com" },
+    { id: "3", name: "Anthropic", type: "anthropic", model: "claude-sonnet-4-6", status: "inactive", baseUrl: "https://api.anthropic.com" },
+    { id: "4", name: "MiniMax", type: "minimax", model: "MiniMax-M2.7", status: "inactive", baseUrl: "https://api.minimax.chat" },
+  ]);
+
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-2xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">🧩 模型管理</h2>
+
+      <div className="space-y-3">
+        {providers.map((p) => (
+          <div key={p.id} className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-sm font-medium">{p.name}</h3>
+                <p className="text-xs text-zinc-500">{p.model}</p>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  p.status === "active"
+                    ? "bg-green-100 dark:bg-green-900/20 text-green-700"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                }`}
+              >
+                {p.status === "active" ? "活跃" : "未接入"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <code className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-mono text-[11px]">
+                {p.baseUrl}
+              </code>
+              <span>·</span>
+              <span>{p.type}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── 主设置页 ─────────────────────────────────────────────
 export default function SettingsPage() {
   const params = useParams();
   const section = params.section as string;
-  const info = settingsMap[section] || {
-    title: "设置",
-    icon: "⚙️",
-    desc: "选择左侧设置项",
-  };
+  const info = settingsMap[section] || { title: "设置", icon: "⚙️", desc: "选择左侧设置项" };
 
   if (section === "memory") return <MemorySettings />;
+  if (section === "appearance") return <AppearanceSettings />;
+  if (section === "models") return <ModelSettings />;
 
   return (
     <div className="h-full flex flex-col items-center justify-center text-zinc-400">
