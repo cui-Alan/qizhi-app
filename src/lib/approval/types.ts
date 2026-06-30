@@ -19,6 +19,7 @@ export interface ApprovalRecord {
   status: ApprovalStatus;
   requestedBy: string;
   assignedTo: string;
+  resolvedBy?: string;
   context: Record<string, unknown>;
   comment?: string;
   createdAt: string;

@@ -96,6 +96,7 @@ export async function approve(
     .update({
       status: "approved",
       comment,
+      resolved_by: approverId,
       resolved_at: new Date().toISOString(),
     })
     .eq("id", approvalId)
@@ -123,6 +124,7 @@ export async function reject(
     .update({
       status: "rejected",
       comment,
+      resolved_by: approverId,
       resolved_at: new Date().toISOString(),
     })
     .eq("id", approvalId)
@@ -167,6 +169,7 @@ function mapRow(row: Record<string, unknown>): ApprovalRecord {
     status: row.status as ApprovalStatus,
     requestedBy: row.requested_by as string,
     assignedTo: row.assigned_to as string,
+    resolvedBy: row.resolved_by as string | undefined,
     context: (row.context as Record<string, unknown>) ?? {},
     comment: row.comment as string | undefined,
     createdAt: row.created_at as string,

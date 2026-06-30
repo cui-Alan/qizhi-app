@@ -115,11 +115,12 @@ CREATE TYPE approval_status AS ENUM ('pending', 'approved', 'rejected');
 
 CREATE TABLE workflow_approvals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  execution_id UUID NOT NULL REFERENCES workflow_executions(id) ON DELETE CASCADE,
+  execution_id TEXT NOT NULL,
   node_id TEXT NOT NULL,
   status approval_status NOT NULL DEFAULT 'pending',
   requested_by UUID REFERENCES users(id),
   assigned_to UUID REFERENCES users(id),
+  resolved_by UUID REFERENCES users(id),
   context JSONB,
   comment TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
