@@ -142,6 +142,33 @@ CREATE TABLE kb_documents (
 );
 
 -- ============================================================
+-- 7b. Knowledge Base Chunks
+-- ============================================================
+CREATE TABLE kb_chunks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  doc_id UUID NOT NULL REFERENCES kb_documents(id) ON DELETE CASCADE,
+  chunk_index INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================
+-- 7c. Channel Messages (External Bot Messages)
+-- ============================================================
+CREATE TABLE channel_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  channel TEXT NOT NULL CHECK (channel IN ('wecom', 'dingtalk', 'wechat', 'feishu', 'slack', 'telegram')),
+  channel_msg_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  user_name TEXT,
+  content TEXT NOT NULL,
+  raw JSONB,
+  processed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================
 -- 8. Audit Logs
 -- ============================================================
 CREATE TABLE audit_logs (
@@ -179,6 +206,8 @@ CREATE INDEX idx_workflow_approvals_execution ON workflow_approvals(execution_id
 CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at);
 CREATE INDEX idx_usage_logs_user ON usage_logs(user_id, created_at);
 CREATE INDEX idx_kb_documents_source ON kb_documents(source);
+CREATE INDEX idx_kb_chunks_doc ON kb_chunks(doc_id);
+CREATE INDEX idx_channel_messages_channel ON channel_messages(channel, channel_msg_id);
 
 -- ============================================================
 -- RLS Policies (basic)
