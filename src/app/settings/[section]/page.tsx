@@ -456,6 +456,76 @@ function DataSettings() {
   );
 }
 
+// ── 账户管理 ─────────────────────────────────────────────
+function AccountSettings() {
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">👤 账户管理</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">账号信息</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-zinc-500">邮箱</span><span>admin@qizhi.chat</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500">角色</span><span>超级管理员</span></div>
+            <div className="flex justify-between"><span className="text-zinc-500">注册时间</span><span>2026-06-15</span></div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">订阅管理</h3>
+          <p className="text-xs text-zinc-500">当前: Free Plan · 5 工作流 · 100 次/天</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 系统设置 ─────────────────────────────────────────────
+function SystemSettings() {
+  const [lang, setLang] = useState("zh-CN"); const [notif, setNotif] = useState(true); const [startup, setStartup] = useState(false);
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">⚙️ 系统设置</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">语言</h3>
+          <select value={lang} onChange={e => setLang(e.target.value)} className="px-3 py-1.5 text-sm rounded-lg border outline-none">
+            <option value="zh-CN">简体中文</option><option value="en">English</option>
+          </select>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border flex items-center justify-between">
+          <div><h3 className="text-sm font-medium">桌面通知</h3><p className="text-xs text-zinc-500">任务完成时弹窗提醒</p></div>
+          <button onClick={() => setNotif(!notif)} className={`w-11 h-6 rounded-full ${notif ? "bg-blue-600" : "bg-zinc-300"}`}><div className={`w-5 h-5 bg-white rounded-full ml-0.5 ${notif ? "translate-x-5" : ""}`} /></button>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border flex items-center justify-between">
+          <div><h3 className="text-sm font-medium">开机启动</h3><p className="text-xs text-zinc-500">系统启动时自动运行企智</p></div>
+          <button onClick={() => setStartup(!startup)} className={`w-11 h-6 rounded-full ${startup ? "bg-blue-600" : "bg-zinc-300"}`}><div className={`w-5 h-5 bg-white rounded-full ml-0.5 ${startup ? "translate-x-5" : ""}`} /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 帮助与反馈 ─────────────────────────────────────────────
+function HelpSettings() {
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">❓ 帮助与反馈</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">使用文档</h3>
+          <p className="text-xs text-zinc-500">企智完整使用指南和 API 文档</p>
+          <button className="mt-2 px-4 py-1.5 text-sm border rounded-lg hover:bg-zinc-50">查看文档</button>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">问题反馈</h3>
+          <textarea placeholder="描述你的问题..." rows={3} className="w-full px-3 py-2 text-sm rounded-lg border outline-none resize-none" />
+          <button className="mt-2 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">提交反馈</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 主设置页 ─────────────────────────────────────────────
 export default function SettingsPage() {
   const params = useParams();
@@ -469,6 +539,9 @@ export default function SettingsPage() {
   if (section === "security") return <SecuritySettings />;
   if (section === "personalization") return <PersonalizationSettings />;
   if (section === "data") return <DataSettings />;
+  if (section === "account") return <AccountSettings />;
+  if (section === "system") return <SystemSettings />;
+  if (section === "help") return <HelpSettings />;
 
   return (
     <div className="h-full flex flex-col items-center justify-center text-zinc-400">
