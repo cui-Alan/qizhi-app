@@ -1,0 +1,13 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/automations",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
