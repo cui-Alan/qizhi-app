@@ -125,6 +125,45 @@ async function openaiInference(
   };
 }
 
+// ── MiniMax API ─────────────────────────────────────────
+async function minimaxInference(
+  req: InferenceRequest,
+  apiKey: string,
+  baseUrl: string,
+): Promise<InferenceResponse> {
+  const url = `${baseUrl}/text/chatcompletion_v2`;
+
+  const body: Record<string, unknown> = {
+    model: req.model,
+    messages: req.messages,
+    stream: false,
+  };
+  if (req.temperature !== undefined) body.temperature = req.temperature;
+  if (req.maxTokens) body.max_tokens = req.maxTokens;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(120000),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`MiniMax inference failed: ${resp.status} ${err}`);
+  }
+
+  const data = await resp.json();
+  return {
+    content: data.choices?.[0]?.message?.content || "",
+    model: data.model || req.model,
+    usage: data.usage,
+  };
+}
+
 // ── Anthropic API ────────────────────────────────────────
 async function anthropicInference(
   req: InferenceRequest,
@@ -205,8 +244,9 @@ export async function inference(
     case "ollama":
       return ollamaInference(req);
     case "openai":
-    case "minimax":
       return openaiInference(req, apiKey || "", baseUrl);
+    case "minimax":
+      return minimaxInference(req, apiKey || process.env.MINIMAX_API_KEY || "", baseUrl || process.env.MINIMAX_BASE_URL || "https://api.minimax.chat/v1");
     case "anthropic":
       return anthropicInference(req, apiKey || "");
     case "openclaw":
@@ -227,7 +267,11 @@ export async function* streamInference(
   const baseUrl2 =
     providerType === "ollama"
       ? process.env.OMLX_BASE_URL || "http://127.0.0.1:8000/v1"
+      : providerType === "minimax"
+      ? (baseUrl || process.env.MINIMAX_BASE_URL || "https://api.minimax.chat/v1")
       : baseUrl || "https://api.openai.com/v1";
+
+  const streamPath = providerType === "minimax" ? "/text/chatcompletion_v2" : "/chat/completions";
 
   const body: Record<string, unknown> = {
     model: req.model,
@@ -245,7 +289,7 @@ export async function* streamInference(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  const resp = await fetch(`${baseUrl2}/chat/completions`, {
+  const resp = await fetch(`${baseUrl2}${streamPath}`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
