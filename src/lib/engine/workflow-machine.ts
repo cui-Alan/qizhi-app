@@ -175,12 +175,48 @@ async function executeScript(step: StepDefinition, ctx: ExecutionContext) {
   };
 }
 
-async function executeApproval(step: StepDefinition, _ctx: ExecutionContext) {
-  // 审批节点 — 发送审批事件后等待
+async function executeApproval(step: StepDefinition, ctx: ExecutionContext) {
+  // 审批节点 — 写入 DB，等待审批通过/拒绝后继续
+  const { createApproval, pollApproval } = await import("@/lib/approval/service");
+
+  const assignedTo = step.config?.assigned_to as string || "admin";
+  const timeoutMs = (step.config?.timeout_minutes as number ?? 30) * 60 * 1000;
+
+  const approval = await createApproval(
+    ctx.executionId,
+    step.id,
+    ctx.variables.userId as string || "system",
+    assignedTo,
+    {
+      workflowName: ctx.workflowName,
+      nodeId: step.id,
+      input: ctx.variables,
+      message: step.config?.message as string || "请审批",
+    }
+  );
+
+  // 轮询等待审批结果（同步阻塞直到审批完成或超时）
+  const resolved = await pollApproval(ctx.executionId, step.id, timeoutMs);
+
+  if (!resolved) {
+    throw new StepExecutionError(step.id, "审批超时", ctx.retryCounts.get(step.id) || 0, ctx.fallbackLevels.get(step.id) || 0);
+  }
+
+  if (resolved.status === "rejected") {
+    throw new StepExecutionError(
+      step.id,
+      `审批拒绝: ${resolved.comment || "无备注"}`,
+      ctx.retryCounts.get(step.id) || 0,
+      ctx.fallbackLevels.get(step.id) || 0
+    );
+  }
+
   return {
-    status: "waiting_approval",
-    assigned_to: step.config?.assigned_to || "admin",
-    message: "等待审批",
+    status: "approved",
+    approvalId: approval.id,
+    comment: resolved.comment,
+    resolvedAt: resolved.resolvedAt,
+    message: "审批通过",
   };
 }
 
