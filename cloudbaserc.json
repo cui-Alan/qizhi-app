@@ -16,5 +16,13 @@
         }
       }
     }
+  },
+  "app": {
+    "serviceName": "qizhi-app",
+    "framework": "next",
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDir": ".next",
+    "deployPath": "/"
   }
 }
