@@ -4,11 +4,19 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "@/stores/chat";
 import { ChatMessageBubble } from "./MessageBubble";
 import { api } from "@/lib/api";
-import { Send, Plus } from "lucide-react";
+import { Send, Plus, ChevronDown } from "lucide-react";
 import type { ChatMessage } from "@/types";
+
+const MODELS = [
+  { id: "DeepSeek-R1-Distill-Qwen-32B-AWQ", name: "DeepSeek R1 32B" },
+  { id: "deepseek-coder-v2-16b-instruct-q4", name: "Coder 16B" },
+  { id: "gpt-4o", name: "GPT-4o" },
+  { id: "claude-opus-4-8", name: "Claude Opus 4.8" },
+];
 
 export function ChatPanel() {
   const [input, setInput] = useState("");
+  const [model, setModel] = useState(MODELS[0].id);
   const {
     currentSessionId,
     sessions,
@@ -89,6 +97,7 @@ export function ChatPanel() {
           session_id: currentSessionId,
           content,
           messages: history,
+          model,
         }),
         signal: controller.signal,
       });
@@ -148,10 +157,22 @@ export function ChatPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="h-12 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+      <div className="h-12 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           {sessions.find((s) => s.id === currentSessionId)?.title || "助理"}
         </span>
+        <div className="relative">
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="appearance-none pl-3 pr-8 py-1 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 outline-none focus:border-blue-400 cursor-pointer"
+          >
+            {MODELS.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+        </div>
       </div>
 
       {/* Message area */}
