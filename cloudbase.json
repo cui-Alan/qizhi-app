@@ -1,0 +1,11 @@
+{
+  "envId": "qizhi-app-d7gfgvcmjb11f8ef0",
+  "framework": {
+    "name": "qizhi-app",
+    "plugins": {
+      "node": {
+        "path": "."
+      }
+    }
+  }
+}

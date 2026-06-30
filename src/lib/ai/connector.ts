@@ -31,9 +31,13 @@ async function ollamaInference(req: InferenceRequest): Promise<InferenceResponse
   if (req.temperature !== undefined) body.temperature = req.temperature;
   if (req.maxTokens) body.max_tokens = req.maxTokens;
 
+  const apiKey = process.env.OMLX_API_KEY || "local";
   const resp = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(120000),
   });
