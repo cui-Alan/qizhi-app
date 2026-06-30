@@ -8,6 +8,7 @@
  */
 
 import { createServer } from "@/lib/supabase/server";
+import { listKV } from "@/lib/mcp/service";
 import type {
   Memory,
   CreateMemoryInput,
@@ -201,12 +202,14 @@ export async function buildMemoryContext(
   query?: string,
   maxChars = 4_000
 ): Promise<string> {
-  const [shortTerm, longTerm, semantic] = await Promise.all([
+  const [shortTerm, longTerm, semantic, mcpEntries] = await Promise.all([
     getMemories(userId, "short_term", 20),
     getMemories(userId, "long_term", 10),
     query
       ? searchMemories(userId, { query, limit: 5 })
       : getMemories(userId, "semantic", 5),
+    // L4: MCP Bridge KV — 跨 Agent 共享上下文
+    listKV("user", userId, undefined, 20).catch(() => []),
   ]);
 
   const lines: string[] = [];
@@ -219,13 +222,19 @@ export async function buildMemoryContext(
     return true;
   };
 
-  // 优先级：long_term > semantic > short_term
+  // 优先级：long_term > semantic > MCP > short_term
   for (const m of longTerm) {
     if (!addLine(formatMemoryLine(m, "长期"))) break;
   }
 
   for (const m of semantic) {
     if (!addLine(formatMemoryLine(m, "知识"))) break;
+  }
+
+  // MCP KV: 跨 Agent 共享上下文（如其他 Agent 写入的项目状态）
+  for (const kv of mcpEntries.filter(kv => !kv.key.startsWith("_broadcast/"))) {
+    const val = typeof kv.value === "object" ? JSON.stringify(kv.value) : String(kv.value);
+    if (!addLine(`[共享:${kv.key}] ${val}`)) break;
   }
 
   for (const m of shortTerm.slice(0, 5)) {
