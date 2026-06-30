@@ -128,7 +128,36 @@ CREATE TABLE workflow_approvals (
 );
 
 -- ============================================================
--- 7. Automations
+-- 7. Tasks
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done')),
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  due_date DATE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_tasks_user ON tasks(user_id);
+
+-- ============================================================
+-- 8. Inspirations
+-- ============================================================
+CREATE TABLE IF NOT EXISTS inspirations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  tags TEXT[] DEFAULT '{}',
+  liked BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_inspirations_user ON inspirations(user_id);
+
+-- ============================================================
+-- 9. Automations
 -- ============================================================
 CREATE TABLE IF NOT EXISTS automations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
