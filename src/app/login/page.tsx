@@ -22,11 +22,11 @@ export default function LoginPage() {
       return;
     }
 
-    const ok = await login(email, password);
-    if (ok) {
+    const result = await login(email, password);
+    if (result.success) {
       router.push("/");
     } else {
-      setError("账号不存在或密码错误");
+      setError(result.error || "账号不存在或密码错误");
     }
   };
 

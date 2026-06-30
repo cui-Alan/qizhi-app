@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createClient } from "@/lib/supabase/client";
 import type { Role } from "@/types";
 
 export interface AuthUser {
@@ -12,52 +13,70 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  initialized: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  init: () => Promise<void>;
   isAdmin: () => boolean;
 }
-
-// Mock admin account for MVP
-const mockUser: AuthUser = {
-  id: "admin-001",
-  email: "admin@qizhi.chat",
-  name: "管理员",
-  role: "super_admin",
-};
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: false,
+  initialized: false,
 
-  login: async (email: string, _password: string) => {
-    set({ loading: true });
-    // Simulate auth — replace with Supabase Auth later
-    await new Promise((r) => setTimeout(r, 600));
-
-    if (email === "admin@qizhi.chat") {
-      set({ user: mockUser, loading: false });
-      return true;
-    }
-
-    // Accept any @qizhi.chat email as valid user for MVP
-    if (email.endsWith("@qizhi.chat")) {
+  init: async () => {
+    if (get().initialized) return;
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
       set({
         user: {
-          id: `user-${Date.now()}`,
-          email,
-          name: email.split("@")[0],
-          role: "user",
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
+          role: (session.user.user_metadata?.role as Role) || "user",
         },
-        loading: false,
+        initialized: true,
       });
-      return true;
+    } else {
+      set({ initialized: true });
     }
-
-    set({ loading: false });
-    return false;
   },
 
-  logout: () => {
+  login: async (email: string, password: string) => {
+    set({ loading: true });
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error || !data.user) {
+      set({ loading: false });
+      return { success: false, error: error?.message || "登录失败" };
+    }
+
+    // Query user role from database
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, name")
+      .eq("id", data.user.id)
+      .single();
+
+    set({
+      user: {
+        id: data.user.id,
+        email: data.user.email || email,
+        name: profile?.name || data.user.user_metadata?.name || email.split("@")[0],
+        role: (profile?.role as Role) || "user",
+      },
+      loading: false,
+    });
+
+    return { success: true };
+  },
+
+  logout: async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     set({ user: null });
   },
 
