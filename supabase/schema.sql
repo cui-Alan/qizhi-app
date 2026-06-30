@@ -128,7 +128,25 @@ CREATE TABLE workflow_approvals (
 );
 
 -- ============================================================
--- 7. Knowledge Base
+-- 7. Automations
+-- ============================================================
+CREATE TABLE IF NOT EXISTS automations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL CHECK (trigger IN ('schedule', 'webhook', 'event')),
+  workflow_id UUID,
+  config JSONB DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+  last_run_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_automations_user ON automations(user_id);
+
+-- ============================================================
+-- 8. Knowledge Base
 -- ============================================================
 CREATE TABLE kb_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
