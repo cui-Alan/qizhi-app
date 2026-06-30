@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "@/stores/chat";
 import { ChatMessageBubble } from "./MessageBubble";
 import { api } from "@/lib/api";
 import { Send, Plus } from "lucide-react";
+import type { ChatMessage } from "@/types";
 
 export function ChatPanel() {
   const [input, setInput] = useState("");
@@ -13,25 +14,25 @@ export function ChatPanel() {
     sessions,
     messages,
     appendMessage,
+    updateLastMessage,
     setMessages,
     setSessions,
     streaming,
     setStreaming,
   } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const currentMessages = currentSessionId
     ? messages[currentSessionId] || []
     : [];
 
-  // Load sessions from API on mount
   useEffect(() => {
     api.getSessions().then((data) => {
       if (data.length > 0) setSessions(data);
     });
   }, [setSessions]);
 
-  // Load messages when session changes
   useEffect(() => {
     if (currentSessionId) {
       api.getMessages(currentSessionId).then((msgs) => {
@@ -44,22 +45,98 @@ export function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentMessages]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || streaming || !currentSessionId) return;
 
-    setStreaming(true);
     const content = input;
     setInput("");
+    setStreaming(true);
 
-    // Send to API
-    const msgs = await api.sendMessage(currentSessionId, content);
+    // 添加用户消息
+    const userMsg: ChatMessage = {
+      id: `msg-${crypto.randomUUID().slice(0, 8)}`,
+      session_id: currentSessionId,
+      role: "user",
+      content,
+      created_at: new Date().toISOString(),
+    };
+    appendMessage(currentSessionId, userMsg);
 
-    if (msgs.length > 0) {
-      msgs.forEach((msg) => appendMessage(currentSessionId, msg));
+    // 添加占位 assistant 消息
+    const assistantId = `msg-${crypto.randomUUID().slice(0, 8)}`;
+    const assistantMsg: ChatMessage = {
+      id: assistantId,
+      session_id: currentSessionId,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+    };
+    appendMessage(currentSessionId, assistantMsg);
+
+    // 收集历史消息
+    const history = currentMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const resp = await fetch("/api/messages/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: currentSessionId,
+          content,
+          messages: history,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok || !resp.body) {
+        setStreaming(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          try {
+            const event = JSON.parse(data);
+            if (event.type === "delta" && event.content) {
+              fullContent += event.content;
+              updateLastMessage(currentSessionId, fullContent);
+            } else if (event.type === "done") {
+              // 流式完成
+            } else if (event.type === "error") {
+              updateLastMessage(currentSessionId, `[错误] ${event.error}`);
+            }
+          } catch {
+            // skip malformed events
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      updateLastMessage(currentSessionId, "[AI 服务暂不可用]");
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
     }
-
-    setStreaming(false);
-  };
+  }, [input, streaming, currentSessionId, currentMessages, appendMessage, updateLastMessage, setStreaming]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -98,20 +175,9 @@ export function ChatPanel() {
             </div>
           </div>
         ) : (
-          currentMessages.map((msg) => (
+          currentMessages.map((msg) =>
             <ChatMessageBubble key={msg.id} message={msg} />
-          ))
-        )}
-        {streaming && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-              </div>
-            </div>
-          </div>
+          )
         )}
         <div ref={messagesEndRef} />
       </div>

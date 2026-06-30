@@ -206,8 +206,11 @@ export async function* streamInference(
   if (req.temperature !== undefined) body.temperature = req.temperature;
   if (req.maxTokens) body.max_tokens = req.maxTokens;
 
+  const ollamaKey = process.env.OMLX_API_KEY || "local";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (providerType !== "ollama" && apiKey) {
+  if (providerType === "ollama") {
+    headers["Authorization"] = `Bearer ${ollamaKey}`;
+  } else if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 

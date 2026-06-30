@@ -14,6 +14,7 @@ interface ChatState {
   deleteSession: (id: string) => void;
   setMessages: (sessionId: string, messages: ChatMessage[]) => void;
   appendMessage: (sessionId: string, message: ChatMessage) => void;
+  updateLastMessage: (sessionId: string, content: string) => void;
   setStreaming: (v: boolean) => void;
 }
 
@@ -69,5 +70,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         [sessionId]: [...(s.messages[sessionId] || []), message],
       },
     })),
+  updateLastMessage: (sessionId, content) =>
+    set((s) => {
+      const msgs = s.messages[sessionId] || [];
+      if (msgs.length === 0) return {};
+      const updated = [...msgs];
+      updated[updated.length - 1] = { ...updated[updated.length - 1], content };
+      return { messages: { ...s.messages, [sessionId]: updated } };
+    }),
   setStreaming: (v) => set({ streaming: v }),
 }));
