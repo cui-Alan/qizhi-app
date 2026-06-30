@@ -30,7 +30,7 @@ async function main() {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${SERVICE_KEY}`,
-      apikey: SERVICE_KEY,
+      apikey: SERVICE_KEY as string,
     },
     body: JSON.stringify({
       email: ADMIN_EMAIL,
@@ -59,7 +59,7 @@ async function main() {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
-        apikey: SERVICE_KEY,
+        apikey: SERVICE_KEY as string,
         Prefer: "return=representation",
       },
       body: JSON.stringify({

@@ -9,12 +9,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createServer } from "@/lib/supabase/server";
 
-const supabase = createClient();
+
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createServer();
     const { query, topK = 5, source } = await req.json();
 
     if (!query) {

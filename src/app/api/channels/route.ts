@@ -6,9 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { parseChannelMessage, type ChannelType, type IncomingMessage } from "@/lib/channels/types";
-import { createClient } from "@/lib/supabase";
-
-const supabase = createClient();
+import { createServer } from "@/lib/supabase/server";
 
 /**
  * 从请求体解析出渠道类型
@@ -17,14 +15,16 @@ function detectChannel(body: Record<string, unknown>): ChannelType | null {
   // 企业微信
   if (body.msgType || body.agentType || (body.fromUser && body.toUser)) return "wecom";
   // 钉钉
-  if (body.text?.content || body.chatbotCorpId || body.robotCode) return "dingtalk";
+  const text = body.text as { content?: string } | undefined;
+  if (text?.content || body.chatbotCorpId || body.robotCode) return "dingtalk";
   // 飞书
-  if (body.schema || body.header?.event_type) return "feishu";
+  if (body.schema || body.header) return "feishu";
   return null;
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createServer();
     const body = await req.json();
     const channel = detectChannel(body);
 

@@ -62,7 +62,8 @@ export function parseWecomEvent(body: Record<string, unknown>): IncomingMessage 
 
 // ── 钉钉事件解析 ────────────────────────────────────────
 export function parseDingtalkEvent(body: Record<string, unknown>): IncomingMessage | null {
-  const content = body.text?.content || body.content;
+  const text = body.text as { content?: string } | undefined;
+  const content = text?.content || body.content;
   if (content) {
     return {
       channel: "dingtalk",

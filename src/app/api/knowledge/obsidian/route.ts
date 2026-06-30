@@ -5,14 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createServer } from "@/lib/supabase/server";
 import { readObsidianVault } from "@/lib/knowledge/obsidian";
 import { chunkByParagraphs } from "@/lib/knowledge/chunker";
 
-const supabase = createClient();
+
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createServer();
     const { vaultPath } = await req.json();
 
     if (!vaultPath) {

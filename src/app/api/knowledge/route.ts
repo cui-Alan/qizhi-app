@@ -7,14 +7,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createServer } from "@/lib/supabase/server";
 import { chunkByParagraphs, type Chunk } from "@/lib/knowledge/chunker";
 import { readObsidianVault } from "@/lib/knowledge/obsidian";
 
-const supabase = createClient();
+
 
 // GET /api/knowledge — 列出文档
 export async function GET(req: NextRequest) {
+  const supabase = await createServer();
   const { searchParams } = new URL(req.url);
   const source = searchParams.get("source"); // filter by source
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
 // POST /api/knowledge — 上传文档（文本内容）
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createServer();
     const body = await req.json();
     const { title, content, source = "upload", fileType = "txt", metadata = {} } = body;
 
