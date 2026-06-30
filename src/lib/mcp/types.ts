@@ -1,6 +1,6 @@
 /**
- * MCP Bridge — 类型定义
- * Hermes ↔ WorkBuddy 双向键值对共享通道
+ * MCP Hub — 类型定义
+ * 企智通用 MCP Client，可外接任何 MCP Server
  */
 
 export type Scope = "global" | "user" | "agent" | "session";
