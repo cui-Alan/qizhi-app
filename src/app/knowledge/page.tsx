@@ -1,195 +1,284 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Search, FileText, FileSpreadsheet, File, Database, BookOpen,
-  HardDrive, Trash2, ExternalLink, Plus, RefreshCw, X,
-  Upload, Loader2, CheckCircle2, AlertCircle, FolderOpen,
-} from "lucide-react";
 
-const docTypes = ["全部", "obsidian", "upload", "feishu", "url"] as const;
-
-interface KBDoc {
+interface Document {
   id: string;
   title: string;
-  source: string;
-  file_type: string;
-  content_preview: string;
+  source: "upload" | "obsidian" | "url" | "feishu";
+  file_type: string | null;
+  content_preview: string | null;
   chunk_count: number;
   created_at: string;
-  metadata?: { obsidianPath?: string; tags?: string[] };
+  metadata: Record<string, unknown> | null;
 }
 
-const DEFAULT_VAULT_PATH = "/Users/alan/Desktop/知识库";
+type FilterSource = "all" | "upload" | "obsidian" | "url" | "feishu";
 
 export default function KnowledgePage() {
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("全部");
-  const [docs, setDocs] = useState<KBDoc[]>([]);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ totalFiles: number; results: { file: string; status: string }[] } | null>(null);
-  const [vaultPath, setVaultPath] = useState(DEFAULT_VAULT_PATH);
+  const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<FilterSource>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ doc_id: string; chunk_text: string; similarity: number }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
-  // Load real docs from API
-  const loadDocs = useCallback(async () => {
+  const fetchDocs = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/api/knowledge");
-      if (resp.ok) {
-        const data = await resp.json();
-        setDocs(data.documents || []);
-      }
-    } catch { /* fallback to empty */ }
-    setLoading(false);
-  }, []);
+      const url = filter === "all"
+        ? "/api/knowledge"
+        : `/api/knowledge?source=${filter}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      setDocs(data.documents || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
 
-  useEffect(() => { loadDocs(); }, [loadDocs]);
+  useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
-  // Sync Obsidian
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncResult(null);
+  const handleUpload = async (title: string, content: string) => {
+    setUploading(true);
     try {
-      const resp = await fetch("/api/knowledge/obsidian", {
+      const resp = await fetch("/api/knowledge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vaultPath }),
+        body: JSON.stringify({ title, content }),
       });
-      const data = await resp.json();
-      setSyncResult(data);
-      if (resp.ok) loadDocs();
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      await fetchDocs();
+      setShowUpload(false);
     } catch (e) {
-      setSyncResult({ totalFiles: 0, results: [{ file: "请求失败", status: String(e) }] });
+      alert(e instanceof Error ? e.message : "上传失败");
+    } finally {
+      setUploading(false);
     }
-    setSyncing(false);
   };
 
-  const filtered = docs.filter((d) => {
-    const matchSearch = !search || d.title.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "全部" || d.source === typeFilter;
-    return matchSearch && matchType;
-  });
-
-  const icons: Record<string, React.ElementType> = {
-    pdf: FileText, docx: FileText, md: BookOpen, doc: FileText,
-    url: ExternalLink, xlsx: FileSpreadsheet, txt: FileText,
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const resp = await fetch("/api/knowledge/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery, top_k: 10 }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      setSearchResults(data.results || []);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "搜索失败");
+    } finally {
+      setSearching(false);
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("确定删除这篇文档？")) return;
+    try {
+      const resp = await fetch(`/api/knowledge/${id}`, { method: "DELETE" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      await fetchDocs();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    }
+  };
+
+  const sourceIcon = (s: Document["source"]) => {
+    const map: Record<string, string> = {
+      upload: "📤", obsidian: "📁", url: "🔗", feishu: "💬",
+    };
+    return map[s] ?? "📄";
+  };
+
+  const sourceLabel: Record<string, string> = {
+    upload: "上传", obsidian: "Obsidian", url: "链接", feishu: "飞书",
+  };
+
+  const filtered = docs.filter(d =>
+    !searchQuery || d.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-black">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">知识库</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
-            Obsidian 同步 · 文档上传 · RAG 检索
-          </p>
-        </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-zinc-800">知识库</h1>
         <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+          onClick={() => setShowUpload(s => !s)}
+          className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm font-medium hover:bg-zinc-700"
         >
-          {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-          {syncing ? "同步中..." : "同步 Obsidian"}
+          {showUpload ? "取消上传" : "＋ 上传文档"}
         </button>
       </div>
 
-      {/* Vault path */}
-      <div className="px-6 py-2 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-        <FolderOpen size={14} className="text-zinc-400 shrink-0" />
+      {/* 上传表单 */}
+      {showUpload && (
+        <UploadForm onSubmit={handleUpload} uploading={uploading} />
+      )}
+
+      {/* 搜索栏 */}
+      <div className="flex gap-2">
         <input
-          value={vaultPath}
-          onChange={(e) => setVaultPath(e.target.value)}
-          className="flex-1 text-xs text-zinc-500 bg-transparent outline-none font-mono"
-          placeholder="Obsidian Vault 路径"
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSearch()}
+          placeholder="搜索知识库..."
+          className="flex-1 border border-zinc-300 rounded-lg px-4 py-2 text-sm"
         />
+        <button
+          onClick={handleSearch}
+          disabled={searching}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        >
+          {searching ? "搜索中..." : "搜索"}
+        </button>
       </div>
 
-      {/* Sync result */}
-      {syncResult && (
-        <div className={`px-6 py-2 text-xs border-b ${
-          syncResult.results?.some(r => r.status === "ok")
-            ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-            : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600"
-        }`}>
-          扫描 {syncResult.totalFiles} 个文件 ·
-          新增 {syncResult.results?.filter(r => r.status === "ok").length || 0} 个文档 ·
-          跳过 {syncResult.results?.filter(r => r.status.startsWith("skipped")).length || 0} 个
+      {/* 搜索结果 */}
+      {searchResults.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="font-medium text-zinc-700 text-sm">搜索结果 ({searchResults.length})</h2>
+          {searchResults.map((r, i) => (
+            <div key={i} className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+              <p className="text-zinc-700">{r.chunk_text.slice(0, 200)}{r.chunk_text.length > 200 ? "..." : ""}</p>
+              <p className="text-xs text-blue-500 mt-1">相似度 {Math.round(r.similarity * 100)}%</p>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Stats */}
-      <div className="px-6 py-2 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-6 text-xs text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <HardDrive size={14} />
-          {docs.length} 个文档
-        </span>
+      {/* 筛选 */}
+      <div className="flex gap-2">
+        {(["all", "upload", "obsidian", "url", "feishu"] as FilterSource[]).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filter === f ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            }`}
+          >
+            {f === "all" ? "全部" : sourceLabel[f]}
+          </button>
+        ))}
       </div>
 
-      {/* Search + filter */}
-      <div className="px-6 py-2 flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索文档..."
-            className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 outline-none focus:border-blue-400"
-          />
-        </div>
-        <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
-          {docTypes.map((t) => (
-            <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                typeFilter === t ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-              }`}
-            >{t === "全部" ? "全部" : t}</button>
-          ))}
-        </div>
-      </div>
+      {/* 文档列表 */}
+      {loading && <p className="text-zinc-400 text-center py-8">加载中...</p>}
+      {error && <p className="text-red-500 text-center py-4">{error}</p>}
 
-      {/* Docs list */}
-      <div className="flex-1 overflow-y-auto px-6 py-3">
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 size={24} className="animate-spin text-zinc-400" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
-            <Database size={40} className="mb-3 opacity-50" />
-            <p className="text-sm">暂无文档</p>
-            <p className="text-xs mt-1">点击「同步 Obsidian」导入知识库</p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {filtered.map((doc) => {
-              const Icon = icons[doc.file_type] || File;
-              return (
-                <div key={doc.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 group transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
-                >
-                  <Icon size={18} className="text-zinc-400 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate font-medium">{doc.title}</div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5">
-                      <span className={`px-1 py-0.5 rounded text-[10px] ${
-                        doc.source === "obsidian"
-                          ? "bg-purple-50 dark:bg-purple-900/20 text-purple-600"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                      }`}>{doc.source}</span>
-                      <span>{doc.chunk_count} chunks</span>
-                      <span>·</span>
-                      <span>{doc.created_at?.slice(0, 10)}</span>
-                    </div>
-                  </div>
+      {!loading && !error && filtered.length === 0 && (
+        <p className="text-zinc-400 text-center py-8">暂无文档</p>
+      )}
+
+      <div className="space-y-2">
+        {filtered.map(doc => (
+          <div key={doc.id} className="bg-white border border-zinc-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm">{sourceIcon(doc.source)}</span>
+                  <span className="font-medium text-zinc-800 truncate">{doc.title}</span>
+                  <span className="text-xs text-zinc-400 border border-zinc-200 px-1.5 py-0.5 rounded">
+                    {sourceLabel[doc.source] ?? doc.source}
+                  </span>
                 </div>
-              );
-            })}
+                {doc.content_preview && (
+                  <p className="text-sm text-zinc-500 line-clamp-2">{doc.content_preview}</p>
+                )}
+                <p className="text-xs text-zinc-400 mt-1">
+                  {doc.chunk_count} 个片段 · {new Date(doc.created_at).toLocaleDateString("zh-CN")}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(doc.id)}
+                className="text-zinc-400 hover:text-red-500 text-sm shrink-0"
+              >
+                删除
+              </button>
+            </div>
           </div>
-        )}
+        ))}
       </div>
+    </div>
+  );
+}
+
+// 上传表单组件
+function UploadForm({ onSubmit, uploading }: { onSubmit: (title: string, content: string) => void; uploading: boolean }) {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [mode, setMode] = useState<"text" | "file">("text");
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTitle(file.name.replace(/\.(md|txt|pdf|docx)$/i, ""));
+      setContent(reader.result as string);
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 space-y-3">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode("text")}
+          className={`px-3 py-1 rounded-lg text-sm ${mode === "text" ? "bg-zinc-800 text-white" : "bg-zinc-200"}`}
+        >
+          文本输入
+        </button>
+        <button
+          onClick={() => setMode("file")}
+          className={`px-3 py-1 rounded-lg text-sm ${mode === "file" ? "bg-zinc-800 text-white" : "bg-zinc-200"}`}
+        >
+          文件上传
+        </button>
+      </div>
+
+      <input
+        type="text"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="文档标题"
+        className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm"
+      />
+
+      {mode === "text" ? (
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          placeholder="粘贴文档内容..."
+          rows={6}
+          className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm resize-none"
+        />
+      ) : (
+        <input
+          type="file"
+          accept=".md,.txt,.pdf,.docx"
+          onChange={handleFile}
+          className="text-sm text-zinc-600"
+        />
+      )}
+
+      <button
+        onClick={() => title && content && onSubmit(title, content)}
+        disabled={uploading || !title || !content}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+      >
+        {uploading ? "上传中..." : "确认上传"}
+      </button>
     </div>
   );
 }
