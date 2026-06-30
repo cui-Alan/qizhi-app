@@ -56,7 +56,12 @@ export class ObsidianMCP {
       const serverInfo = await this.client.connect();
 
       this.tools = await this.client.listTools();
-      this.resources = await this.client.listResources();
+      try {
+        this.resources = await this.client.listResources();
+      } catch {
+        // 部分 MCP Server（如 filesystem server v0.2.0）不支持 resources/list
+        this.resources = [];
+      }
       this.connected = true;
 
       console.log(`[ObsidianMCP] 已连接: ${serverInfo.name} v${serverInfo.version}`);
@@ -103,10 +108,16 @@ export class ObsidianMCP {
       return fs.readFile(filePath, "utf-8");
     }
 
-    const result = await this.client.readResource(uri) as {
-      contents: Array<{ mimeType: string; text: string }>;
-    };
-    return result.contents[0]?.text ?? "";
+    try {
+      const result = await this.client.readResource(uri) as {
+        contents: Array<{ mimeType: string; text: string }>;
+      };
+      return result.contents[0]?.text ?? "";
+    } catch {
+      // MCP Server 不支持 resources/read，降级到文件系统
+      const filePath = uri.replace(/file:\/\//, "");
+      return fs.readFile(filePath, "utf-8");
+    }
   }
 
   /**
@@ -144,18 +155,13 @@ export class ObsidianMCP {
    * 列出 Vault 中所有 .md 文件
    */
   async listDocuments(folder?: string): Promise<string[]> {
-    if (!this.client || !this.connected) {
+    if (!this.client || !this.connected || this.resources.length === 0) {
       return this.listDocumentsFilesystem(folder);
     }
 
-    try {
-      const result = await this.client.listResources() as MCPResource[];
-      return result
-        .filter(r => r.uri.endsWith(".md"))
-        .map(r => r.uri);
-    } catch {
-      return this.listDocumentsFilesystem(folder);
-    }
+    return this.resources
+      .filter(r => r.uri.endsWith(".md"))
+      .map(r => r.uri);
   }
 
   // ── 文件系统 Fallback ──────────────────────────────────────
