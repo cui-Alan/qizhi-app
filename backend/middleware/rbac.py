@@ -133,3 +133,27 @@ class RBACMiddleware:
                     raise HTTPException(status_code=403, detail=f"权限不足：需要 {res}:{act}")
             return current_user
         return dependency
+
+
+# ===== 快捷依赖函数 =====
+
+async def require_admin(current_user: dict) -> dict:
+    """要求 admin 或 super_admin 角色"""
+    role = current_user.get("role", "")
+    if role not in [Role.ADMIN.value, Role.SUPER_ADMIN.value]:
+        raise HTTPException(
+            status_code=403,
+            detail="需要管理员权限"
+        )
+    return current_user
+
+
+async def require_super_admin(current_user: dict) -> dict:
+    """要求 super_admin 角色"""
+    role = current_user.get("role", "")
+    if role != Role.SUPER_ADMIN.value:
+        raise HTTPException(
+            status_code=403,
+            detail="需要超级管理员权限"
+        )
+    return current_user

@@ -7,6 +7,7 @@ import hmac
 import hashlib
 import time
 import json
+import base64
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -28,9 +29,9 @@ FEISHU_WEBHOOK_SECRET = os.getenv("FEISHU_WEBHOOK_SECRET", "")
 
 # ===== 签名验证 =====
 
-def verify_feishu_signature(signature: str, timestamp: str, body: str) -> bool:
+def verify_lark_signature(signature: str, timestamp: str, body: str) -> bool:
     """
-    验证飞书签名
+    验证飞书 X-Lark-Signature header
     飞书签名算法: HMAC-SHA256 + Base64
     """
     if not FEISHU_WEBHOOK_SECRET:
@@ -41,7 +42,6 @@ def verify_feishu_signature(signature: str, timestamp: str, body: str) -> bool:
     string_to_sign = f"{timestamp}{body}"
     
     # 计算签名
-    import base64
     hmac_obj = hmac.new(
         FEISHU_WEBHOOK_SECRET.encode("utf-8"),
         string_to_sign.encode("utf-8"),
@@ -52,27 +52,7 @@ def verify_feishu_signature(signature: str, timestamp: str, body: str) -> bool:
     return hmac.compare_digest(signature, computed_signature)
 
 
-def verify_lark_signature(signature: str, timestamp: str, body: str) -> bool:
-    """
-    验证飞书 X-Lark-Signature header
-    与 verify_feishu_signature 相同算法
-    """
-    return verify_feishu_signature(signature, timestamp, body)
-
-
 # ===== 请求/响应模型 =====
-
-class FeishuTextMessage(BaseModel):
-    """飞书文本消息"""
-    text: str
-
-
-class FeishuEvent(BaseModel):
-    """飞书事件"""
-    schema_version: str = "2.0"
-    header: Dict[str, Any]
-    event: Dict[str, Any]
-
 
 class FeishuResponse(BaseModel):
     """飞书响应"""
@@ -236,11 +216,6 @@ async def feishu_webhook(
         content=ai_response,
         metadata={"channel": "feishu"}
     )
-    
-    # 构建飞书回复
-    # 飞书需要在 30 秒内回复，否则需要使用回调模式
-    # 这里使用直接回复模式
-    reply_content = json.dumps({"text": ai_response})
     
     return FeishuResponse(code=0, msg="success")
 

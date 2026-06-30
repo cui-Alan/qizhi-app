@@ -14,31 +14,16 @@ import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.auth_service import hash_password, make_token_response
 from db.user_service import (
     create_user, list_users, update_user,
     set_user_status, generate_temp_password,
 )
+from middleware.rbac import require_admin, require_super_admin
 
 router = APIRouter(prefix="/api/v1/admin", tags=["管理员"])
-
-
-# ===== RBAC 依赖 =====
-
-async def require_admin(current_user: dict = Depends(Header())) -> dict:
-    """要求是 Admin 或 Super Admin"""
-    if current_user.get("role") not in ("admin", "super_admin"):
-        raise HTTPException(status_code=403, detail="需要管理员权限")
-    return current_user
-
-
-async def require_super_admin(current_user: dict = Depends(Header())) -> dict:
-    """要求是 Super Admin"""
-    if current_user.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="需要超级管理员权限")
-    return current_user
-
 
 # ===== 请求/响应模型 =====
 

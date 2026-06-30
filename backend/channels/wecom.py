@@ -22,42 +22,22 @@ router = APIRouter(prefix="/api/v1/channels/wecom", tags=["企微消息通道"])
 
 # ===== 配置 =====
 # 企微 webhook 验证 token（从环境变量或配置获取）
-WECOM_WEBHOOK_TOKEN = os.getenv("WECOM_WEBHOOK_TOKEN", "")
-WECOM_WEBHOOK_SECRET = os.getenv("WECOM_WEBHOOK_SECRET", "")
+WECOM_WEBHOOK_TOKEN=os.getenv("WECOM_WEBHOOK_TOKEN", "")
+WECOM_WEBHOOK_SECRET=os.getenv("WECOM_WEBHOOK_SECRET", "")
 
 
 # ===== 签名验证 =====
-
-def verify_wecom_signature(signature: str, timestamp: str, nonce: str, body: str) -> bool:
-    """
-    验证企微签名
-    企微签名算法: 将 token、timestamp、nonce、body 按字典序拼接后进行 SHA1
-    """
-    if not WECOM_WEBHOOK_SECRET:
-        # 未配置 secret 时跳过验证（开发环境）
-        return True
-    
-    # 构造签名内容（按字典序拼接）
-    sort_str = f"{WECOM_WEBHOOK_TOKEN}{timestamp}{nonce}{body}"
-    
-    # 计算 SHA1
-    hmac_obj = hmac.new(
-        b"",
-        sort_str.encode("utf-8"),
-        hashlib.sha1
-    )
-    computed_signature = hmac_obj.hexdigest()
-    
-    return hmac.compare_digest(signature, computed_signature)
-
 
 def verify_wecom_msg_signature(msg_signature: str, timestamp: str, nonce: str, encrypt_type: str, body: str) -> bool:
     """
     验证企微消息签名
     用于事件回调验证
     """
-    if encrypt_type != "aes":
+    if encrypt_type and encrypt_type != "aes":
         return True  # 未加密时跳过验证
+    
+    if not WECOM_WEBHOOK_SECRET:
+        return True  # 未配置时跳过验证
     
     # 构造签名内容
     sort_str = f"{WECOM_WEBHOOK_TOKEN}{timestamp}{nonce}{body}"
@@ -73,11 +53,6 @@ def verify_wecom_msg_signature(msg_signature: str, timestamp: str, nonce: str, e
 
 # ===== 请求/响应模型 =====
 
-class WeComTextMessage(BaseModel):
-    """企微文本消息"""
-    Content: str
-
-
 class WeComResponse(BaseModel):
     """企微响应"""
     errcode: int = 0
@@ -85,49 +60,6 @@ class WeComResponse(BaseModel):
 
 
 # ===== 消息解析 =====
-
-def parse_wecom_message(msg_xml: str) -> Optional[Dict[str, Any]]:
-    """
-    解析企微 XML 消息格式
-    返回: {"msg_type": "text", "content": "...", "user_id": "...", "session_id": "..."}
-    """
-    import xml.etree.ElementTree as ET
-    
-    try:
-        root = ET.fromstring(msg_xml)
-    except ET.ParseError:
-        return None
-    
-    # 提取消息类型
-    msg_type = root.findtext("MsgType", "")
-    user_id = root.findtext("FromUserName", "")
-    session_id = root.findtext("MsgId", "")
-    
-    if msg_type == "text":
-        content = root.findtext("Content", "")
-        return {
-            "msg_type": msg_type,
-            "content": content,
-            "user_id": user_id,
-            "session_id": session_id,
-        }
-    elif msg_type == "event":
-        # 事件消息
-        event = root.findtext("Event", "")
-        return {
-            "msg_type": "event",
-            "event": event,
-            "user_id": user_id,
-            "session_id": session_id,
-        }
-    else:
-        return {
-            "msg_type": msg_type,
-            "content": "",
-            "user_id": user_id,
-            "session_id": session_id,
-        }
-
 
 def parse_wecom_json_event(body: dict) -> Optional[Dict[str, Any]]:
     """
@@ -213,13 +145,12 @@ async def wecom_webhook(
         if not verify_wecom_msg_signature(msg_signature, timestamp, nonce, encrypt_type or "", body_str):
             raise HTTPException(status_code=401, detail="签名验证失败")
     
-    # 尝试解析为 JSON
+    # 解析为 JSON
     try:
         body_json = json.loads(body_str)
         parsed = parse_wecom_json_event(body_json)
     except json.JSONDecodeError:
-        # 尝试解析为 XML（旧版 API）
-        parsed = parse_wecom_message(body_str)
+        raise HTTPException(status_code=400, detail="无法解析消息格式")
     
     if not parsed:
         raise HTTPException(status_code=400, detail="无法解析消息格式")
@@ -266,15 +197,6 @@ async def wecom_webhook(
         content=ai_response,
         metadata={"channel": "wecom"}
     )
-    
-    # 构建企微回复（文本消息 XML 格式）
-    reply_xml = f"""<xml>
-<ToUserName><![CDATA[{user_id}]]></ToUserName>
-<FromUserName><![CDATA[gh_xxxxxxxx]]></FromUserName>
-<CreateTime>{int(time.time())}</CreateTime>
-<MsgType><![CDATA[text]]></MsgType>
-<Content><![CDATA[{ai_response}]]></Content>
-</xml>"""
     
     return WeComResponse(errcode=0, errmsg="ok")
 

@@ -52,6 +52,12 @@ const TopBar: React.FC<TopBarProps> = ({ currentPage, onNavigate, userRole, onLo
             👥 管理
           </button>
         )}
+        <button
+          className={`nav-btn ${currentPage === 'sessions' ? 'active' : ''}`}
+          onClick={() => onNavigate('sessions')}
+        >
+          💬 会话
+        </button>
       </nav>
 
       <div className="topbar-right">
