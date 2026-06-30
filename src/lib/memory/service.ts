@@ -146,7 +146,10 @@ export async function searchMemories(
   const { data, error } = await q;
   if (error) throw new Error(`searchMemories: ${error.message}`);
 
-  let memories: MemoryWithScore[] = (data ?? []).map(mapRow);
+  let memories: MemoryWithScore[] = (data ?? []).map((r) => {
+    const mem = mapRow(r);
+    return { ...mem, relevanceScore: importanceScore(mem) } as MemoryWithScore;
+  });
 
   // 标签过滤
   if (input.tags?.length) {

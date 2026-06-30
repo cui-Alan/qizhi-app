@@ -154,6 +154,29 @@ CREATE TABLE kb_chunks (
 );
 
 -- ============================================================
+-- 7d. User Memories (Hermes-style分层记忆)
+-- ============================================================
+CREATE TYPE memory_tier AS ENUM ('working', 'short_term', 'long_term', 'semantic');
+CREATE TYPE memory_importance AS ENUM ('low', 'medium', 'high', 'critical');
+
+CREATE TABLE memories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tier memory_tier NOT NULL DEFAULT 'short_term',
+  content TEXT NOT NULL,
+  summary TEXT,
+  importance memory_importance NOT NULL DEFAULT 'medium',
+  tags TEXT[] DEFAULT '{}',
+  source TEXT DEFAULT 'agent',        -- 'user' | 'agent' | 'auto_extract'
+  recall_count INTEGER DEFAULT 0,
+  last_recalled_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,             -- short_term 自动过期
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================
 -- 7c. Channel Messages (External Bot Messages)
 -- ============================================================
 CREATE TABLE channel_messages (
@@ -208,6 +231,8 @@ CREATE INDEX idx_usage_logs_user ON usage_logs(user_id, created_at);
 CREATE INDEX idx_kb_documents_source ON kb_documents(source);
 CREATE INDEX idx_kb_chunks_doc ON kb_chunks(doc_id);
 CREATE INDEX idx_channel_messages_channel ON channel_messages(channel, channel_msg_id);
+CREATE INDEX idx_memories_user_tier ON memories(user_id, tier);
+CREATE INDEX idx_memories_expires ON memories(expires_at) WHERE expires_at IS NOT NULL;
 
 -- ============================================================
 -- RLS Policies (basic)
@@ -217,6 +242,10 @@ ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workflow_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workflow_executions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kb_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kb_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE channel_messages ENABLE ROW LEVEL SECURITY;
 
 -- Users can read their own data
 CREATE POLICY "Users read self" ON users
@@ -238,3 +267,7 @@ CREATE POLICY "Authenticated read workflows" ON workflow_definitions
 
 CREATE POLICY "Authenticated read executions" ON workflow_executions
   FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Memories: users CRUD their own
+CREATE POLICY "Users CRUD own memories" ON memories
+  FOR ALL USING (auth.uid() = user_id);
