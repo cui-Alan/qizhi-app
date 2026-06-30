@@ -233,6 +233,29 @@ CREATE INDEX idx_kb_chunks_doc ON kb_chunks(doc_id);
 CREATE INDEX idx_channel_messages_channel ON channel_messages(channel, channel_msg_id);
 CREATE INDEX idx_memories_user_tier ON memories(user_id, tier);
 CREATE INDEX idx_memories_expires ON memories(expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX idx_mcp_kv_scope ON mcp_kv(scope, key);
+CREATE INDEX idx_mcp_kv_updated ON mcp_kv(updated_at);
+
+-- ============================================================
+-- 10. MCP Bridge (Hermes ↔ WorkBuddy KV 共享)
+-- ============================================================
+CREATE TYPE kv_scope AS ENUM ('global', 'user', 'agent', 'session');
+
+CREATE TABLE mcp_kv (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT NOT NULL,
+  value JSONB NOT NULL,
+  scope kv_scope NOT NULL DEFAULT 'user',
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  owner_name TEXT,
+  tags TEXT[] DEFAULT '{}',
+  version INTEGER DEFAULT 1,
+  ttl INTEGER,                         -- 生存秒数
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (key, scope)
+);
 
 -- ============================================================
 -- RLS Policies (basic)
@@ -246,6 +269,7 @@ ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kb_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kb_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE channel_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcp_kv ENABLE ROW LEVEL SECURITY;
 
 -- Users can read their own data
 CREATE POLICY "Users read self" ON users
@@ -271,3 +295,10 @@ CREATE POLICY "Authenticated read executions" ON workflow_executions
 -- Memories: users CRUD their own
 CREATE POLICY "Users CRUD own memories" ON memories
   FOR ALL USING (auth.uid() = user_id);
+
+-- MCP KV: global readable, user entries owner-only
+CREATE POLICY "Global KV readable" ON mcp_kv
+  FOR SELECT USING (scope = 'global');
+
+CREATE POLICY "Users CRUD own KV" ON mcp_kv
+  FOR ALL USING (auth.uid() = owner_id OR scope = 'global');
