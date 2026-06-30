@@ -60,6 +60,8 @@ export interface ModelMapping {
 
 // Workflow
 export type WorkflowStepType =
+  | "start"
+  | "end"
   | "tool"
   | "llm_task"
   | "for_each"
