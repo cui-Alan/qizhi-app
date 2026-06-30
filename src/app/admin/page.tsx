@@ -65,7 +65,7 @@ export default function AdminPage() {
     users: users.filter(u => u.role === "user").length,
   };
 
-  if (!user || (user.role !== "owner" && user.role !== "super_admin" && user.role !== "admin")) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center h-full text-zinc-400">
         仅管理员可访问
