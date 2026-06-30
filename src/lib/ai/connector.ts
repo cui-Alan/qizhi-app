@@ -1,11 +1,12 @@
 /**
  * 企智 QiZhi — AI 推理连接器
  * 整合自小虾的 agent/connector + 多 provider 支持
+ * 支持：oMLX / OpenAI / Anthropic / MiniMax / OpenClaw
  */
 
 export type ModelProvider = "ollama" | "openai" | "anthropic" | "minimax" | "openclaw";
 
-interface InferenceRequest {
+export interface InferenceRequest {
   model: string;
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
   temperature?: number;
@@ -13,10 +14,40 @@ interface InferenceRequest {
   stream?: boolean;
 }
 
-interface InferenceResponse {
+export interface InferenceResponse {
   content: string;
   model: string;
   usage?: { inputTokens: number; outputTokens: number };
+}
+
+// ── 记忆上下文注入 ────────────────────────────────────────
+/**
+ * 将记忆上下文注入到 messages 的 system 消息之前。
+ * 如果已有 system 消息，追加到其内容末尾；
+ * 如果没有 system 消息，在最前面插入一条 system 消息。
+ */
+export function injectMemoryContext(
+  messages: InferenceRequest["messages"],
+  memoryContext: string,
+): InferenceRequest["messages"] {
+  if (!memoryContext) return messages;
+
+  const memoryBlock = `\n\n${memoryContext}\n`;
+
+  const systemIdx = messages.findIndex((m) => m.role === "system");
+  if (systemIdx >= 0) {
+    const msgs = [...messages];
+    msgs[systemIdx] = {
+      ...msgs[systemIdx],
+      content: msgs[systemIdx].content + memoryBlock,
+    };
+    return msgs;
+  }
+
+  return [
+    { role: "system", content: `你是企智（QiZhi）AI 助手。${memoryBlock}` },
+    ...messages,
+  ];
 }
 
 // ── 本地 oMLX（Ollama）推理 ───────────────────────────────

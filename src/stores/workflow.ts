@@ -6,11 +6,13 @@ interface WorkflowState {
   edges: Edge[];
   selectedNodeId: string | null;
   yamlContent: string;
+  workflowName: string;
 
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   setSelectedNode: (id: string | null) => void;
   setYamlContent: (yaml: string) => void;
+  setWorkflowName: (name: string) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set) => ({
@@ -23,4 +25,6 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
   setEdges: (edges) => set({ edges }),
   setSelectedNode: (id) => set({ selectedNodeId: id }),
   setYamlContent: (yaml) => set({ yamlContent: yaml }),
+  setWorkflowName: (name) => set({ workflowName: name }),
+  workflowName: "",
 }));
