@@ -8,7 +8,7 @@
  */
 
 import { createServer } from "@/lib/supabase/server";
-import { listKV } from "@/lib/mcp/service";
+import { listHermesState } from "@/lib/hermes/client";
 import type {
   Memory,
   CreateMemoryInput,
@@ -208,8 +208,8 @@ export async function buildMemoryContext(
     query
       ? searchMemories(userId, { query, limit: 5 })
       : getMemories(userId, "semantic", 5),
-    // L4: MCP Bridge KV — 跨 Agent 共享上下文
-    listKV("user", userId, undefined, 20).catch(() => []),
+    // L4: Hermes Gateway — 跨 Agent 共享上下文（替代 MCP Bridge）
+    listHermesState(`user/${userId}`).catch(() => []),
   ]);
 
   const lines: string[] = [];
@@ -231,10 +231,10 @@ export async function buildMemoryContext(
     if (!addLine(formatMemoryLine(m, "知识"))) break;
   }
 
-  // MCP KV: 跨 Agent 共享上下文（如其他 Agent 写入的项目状态）
-  for (const kv of mcpEntries.filter(kv => !kv.key.startsWith("_broadcast/"))) {
-    const val = typeof kv.value === "object" ? JSON.stringify(kv.value) : String(kv.value);
-    if (!addLine(`[共享:${kv.key}] ${val}`)) break;
+  // Hermes Gateway: 跨 Agent 共享上下文
+  for (const entry of mcpEntries) {
+    const val = typeof entry.value === "object" ? JSON.stringify(entry.value) : String(entry.value ?? "");
+    if (!addLine(`[Hermes:${entry.key}] ${val}`)) break;
   }
 
   for (const m of shortTerm.slice(0, 5)) {

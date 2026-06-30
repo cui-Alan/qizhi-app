@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 export async function POST(req: NextRequest) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+
+  const Stripe = (await import("stripe")).default;
+  const stripe = new Stripe(key);
   const sig = req.headers.get("stripe-signature");
   if (!sig) return NextResponse.json({ error: "Missing signature" }, { status: 400 });
 
-  let event: Stripe.Event;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let event: any;
   try {
     const body = await req.text();
     event = stripe.webhooks.constructEvent(
@@ -24,26 +27,31 @@ export async function POST(req: NextRequest) {
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.user_id;
-        const planId = session.metadata?.plan_id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const session = event as any;
+        const userId = session?.data?.object?.metadata?.user_id;
+        const planId = session?.data?.object?.metadata?.plan_id;
         if (userId && planId) {
           await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
             method: "POST", headers,
             body: JSON.stringify({
               user_id: userId, plan_id: planId,
-              status: "active", stripe_subscription_id: session.subscription,
+              status: "active", stripe_subscription_id: session?.data?.object?.subscription,
             }),
           });
         }
         break;
       }
       case "customer.subscription.deleted": {
-        const sub = event.data.object as Stripe.Subscription;
-        await fetch(
-          `${supabaseUrl}/rest/v1/subscriptions?stripe_subscription_id=eq.${sub.id}`,
-          { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) }
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = event as any;
+        const subId = sub?.data?.object?.id;
+        if (subId) {
+          await fetch(
+            `${supabaseUrl}/rest/v1/subscriptions?stripe_subscription_id=eq.${subId}`,
+            { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) }
+          );
+        }
         break;
       }
     }

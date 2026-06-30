@@ -40,6 +40,7 @@
     "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "stripe": "^22.3.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^9.0.10"
@@ -48,12 +49,21 @@
   "build": {
     "appId": "com.qizhi.app",
     "productName": "企智 QiZhi",
-    "directories": { "output": "release" },
+    "directories": {
+      "output": "release"
+    },
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "public/icon.icns"
     },
-    "linux": { "target": ["AppImage"] }
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
   }
 }
