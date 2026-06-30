@@ -86,6 +86,17 @@ app.include_router(auth_router)
 from routes.admin import router as admin_router
 app.include_router(admin_router)
 
+# 消息通道路由（飞书/企微）
+from channels.feishu import router as feishu_router
+app.include_router(feishu_router)
+
+from channels.wecom import router as wecom_router
+app.include_router(wecom_router)
+
+# Session 路由（会话管理）
+from routes.session import router as session_router
+app.include_router(session_router)
+
 
 # ===== 工作流执行 =====
 
