@@ -21,7 +21,7 @@ let cachedSoul: SoulFile | null = null;
 let cachedConfig: SoulConfig | null = null;
 let cachedSystemPrompt: string | null = null;
 
-function needsReload(cached: SoulFile | null, filePath: string): boolean {
+async function needsReload(cached: SoulFile | null, filePath: string): Promise<boolean> {
   if (!cached) return true;
   try {
     const stat = await fs.stat(filePath);
@@ -125,6 +125,10 @@ async function loadSoul(soulRoot: string): Promise<{ soul: SoulFile; config: Sou
     loadConfig(soulRoot),
     needsReload(cachedSoul, path.join(soulRoot, "SOUL.MD")),
   ]);
+
+  if (!needsRefresh && cachedSystemPrompt && cachedConfig) {
+    return { soul: cachedSoul!, config: cachedConfig, systemPrompt: cachedSystemPrompt };
+  }
 
   if (!needsRefresh && cachedSystemPrompt && cachedConfig) {
     return { soul: cachedSoul!, config: cachedConfig, systemPrompt: cachedSystemPrompt };
