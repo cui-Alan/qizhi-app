@@ -159,8 +159,8 @@ export function Sidebar() {
           </button>
         </div>
 
-        {/* Session list — scrollable with max height so nav is always visible */}
-        <div className="max-h-[40%] overflow-y-auto px-2 space-y-0.5">
+        {/* Session list — capped at 35% so nav always shows */}
+        <div className="max-h-[35%] overflow-y-auto px-2 space-y-0.5">
           {sessions.map((session) => {
             const isActive = currentSessionId === session.id;
             return (
@@ -232,8 +232,8 @@ export function Sidebar() {
         {/* Divider */}
         <div className="mx-3 my-1 border-t border-zinc-200 dark:border-zinc-700" />
 
-        {/* Navigation */}
-        <nav className="px-2 pb-2 space-y-0.5">
+        {/* Navigation — scrollable so 设置 is always reachable */}
+        <nav className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
           <NavLink href="/chat" icon={Bot} label="助理" />
           <NavLink href="/workflow" icon={Workflow} label="工作流" />
 

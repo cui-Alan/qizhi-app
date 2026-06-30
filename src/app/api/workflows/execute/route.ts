@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     };
 
     const encoder = new TextEncoder();
-    let stepResults: Record<string, unknown> = {};
+    let stepResults: Map<string, unknown> = new Map();
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
               .update({
                 status: "completed",
                 completed_at: new Date().toISOString(),
-                checkpoint_data: { stepResults: Object.fromEntries(stepResults) },
+                checkpoint_data: { stepResults: Object.fromEntries(stepResults as Map<string, unknown>) },
               })
               .eq("id", executionId);
           }
