@@ -1,74 +1,105 @@
 /**
- * 企智 · TopBar
- * 顶部栏：Logo + 云端同步状态 + 管理入口 + 登出
+ * 企智 · TopBar.tsx
+ * 顶部栏 - 用户信息 + 云端同步状态
  */
 
 import React from 'react';
-import './TopBar.css';
-
-type Page = 'flows' | 'monitor' | 'settings' | 'admin' | 'sessions';
 
 interface TopBarProps {
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
-  userRole: string | null;
-  onLogout: () => void;
+  currentPage: string;
+  onNavigate: (page: 'flows' | 'chat' | 'monitor' | 'settings') => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ currentPage, onNavigate, userRole, onLogout }) => {
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-
+const TopBar: React.FC<TopBarProps> = ({ currentPage }) => {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <span className="topbar-logo">🤖</span>
-        <span className="topbar-brand">企智</span>
+        <span className="page-title">
+          {currentPage === 'chat' && '企智对话'}
+          {currentPage === 'flows' && '工作流编辑器'}
+          {currentPage === 'monitor' && '监控面板'}
+          {currentPage === 'settings' && '设置'}
+        </span>
       </div>
-
-      <nav className="topbar-nav">
-        <button
-          className={`nav-btn ${currentPage === 'flows' ? 'active' : ''}`}
-          onClick={() => onNavigate('flows')}
-        >
-          ⚙️ 工作流
-        </button>
-        <button
-          className={`nav-btn ${currentPage === 'monitor' ? 'active' : ''}`}
-          onClick={() => onNavigate('monitor')}
-        >
-          📊 监控
-        </button>
-        <button
-          className={`nav-btn ${currentPage === 'settings' ? 'active' : ''}`}
-          onClick={() => onNavigate('settings')}
-        >
-          ⚡ 设置
-        </button>
-        {isAdmin && (
-          <button
-            className={`nav-btn ${currentPage === 'admin' ? 'active' : ''}`}
-            onClick={() => onNavigate('admin')}
-          >
-            👥 管理
-          </button>
-        )}
-        <button
-          className={`nav-btn ${currentPage === 'sessions' ? 'active' : ''}`}
-          onClick={() => onNavigate('sessions')}
-        >
-          💬 会话
-        </button>
-      </nav>
-
+      
       <div className="topbar-right">
+        {/* 同步状态 */}
         <div className="sync-status">
-          <span className="sync-dot" />
-          <span>已连接</span>
+          <span className="sync-dot"></span>
+          <span className="sync-text">已同步</span>
         </div>
-        <button className="logout-btn" onClick={onLogout} title="退出登录">
-          🚪
-        </button>
+        
+        {/* 用户信息 */}
+        <div className="user-info">
+          <div className="user-avatar">A</div>
+          <span className="user-name">Alan</span>
+        </div>
       </div>
+
+      <style>{`
+        .topbar {
+          height: var(--topbar-height);
+          background: var(--bg-secondary);
+          border-bottom: 1px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 16px;
+        }
+        .topbar-left {
+          display: flex;
+          align-items: center;
+        }
+        .page-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+        .topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .sync-status {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+        }
+        .sync-dot {
+          width: 8px;
+          height: 8px;
+          background: var(--color-success);
+          border-radius: 50%;
+        }
+        .sync-text {
+          font-size: 12px;
+          color: var(--text-secondary);
+        }
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .user-avatar {
+          width: 32px;
+          height: 32px;
+          background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 600;
+          color: white;
+        }
+        .user-name {
+          font-size: 14px;
+          color: var(--text-primary);
+        }
+      `}</style>
     </header>
   );
 };

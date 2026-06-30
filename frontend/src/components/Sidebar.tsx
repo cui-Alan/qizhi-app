@@ -7,8 +7,7 @@ import React from 'react';
 
 interface SidebarProps {
   currentPage: string;
-  onNavigate: (page: 'flows' | 'monitor' | 'settings' | 'admin' | 'sessions') => void;
-  userRole?: string | null;
+  onNavigate: (page: 'flows' | 'chat' | 'monitor' | 'settings') => void;
 }
 
 // 模拟工作流数据
@@ -19,8 +18,7 @@ const workflows = [
   { id: '4', name: '财务对账', status: 'active', lastRun: '3天前' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, userRole }) => {
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   return (
     <aside className="sidebar">
       {/* Logo */}
@@ -33,6 +31,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, userRole }) 
 
       {/* 导航 */}
       <nav className="sidebar-nav">
+        <button
+          className={`nav-item ${currentPage === 'chat' ? 'active' : ''}`}
+          onClick={() => onNavigate('chat')}
+        >
+          <span className="nav-icon">💬</span>
+          <span>对话</span>
+        </button>
+
         <button
           className={`nav-item ${currentPage === 'flows' ? 'active' : ''}`}
           onClick={() => onNavigate('flows')}
@@ -53,22 +59,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, userRole }) 
         >
           <span className="nav-icon">⚙️</span>
           <span>设置</span>
-        </button>
-        {isAdmin && (
-          <button
-            className={`nav-item ${currentPage === 'admin' ? 'active' : ''}`}
-            onClick={() => onNavigate('admin')}
-          >
-            <span className="nav-icon">👥</span>
-            <span>用户管理</span>
-          </button>
-        )}
-        <button
-          className={`nav-item ${currentPage === 'sessions' ? 'active' : ''}`}
-          onClick={() => onNavigate('sessions')}
-        >
-          <span className="nav-icon">💬</span>
-          <span>会话</span>
         </button>
       </nav>
 

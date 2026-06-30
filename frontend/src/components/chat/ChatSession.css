@@ -1,0 +1,202 @@
+/* 企智 · ChatSession.css */
+
+/* 会话管理器容器 */
+.session-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface);
+}
+
+/* 标题栏 */
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.session-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.new-session-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.new-session-btn:hover {
+  transform: scale(1.1);
+}
+
+/* 会话列表 */
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* 空状态 */
+.session-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-text-muted);
+}
+
+.session-empty p {
+  margin-bottom: 12px;
+}
+
+.session-empty button {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 会话项 */
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.session-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.session-item.active {
+  background: var(--color-primary-bg);
+  border-left: 3px solid var(--color-primary);
+}
+
+.session-item:hover .session-actions {
+  opacity: 1;
+}
+
+/* 会话内容 */
+.session-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.session-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* 操作按钮 */
+.session-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-surface);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.session-item.active .session-actions {
+  background: var(--color-primary-bg);
+}
+
+.session-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.session-actions button:hover {
+  background: var(--color-surface-hover);
+}
+
+/* 删除确认 */
+.delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-error);
+}
+
+.delete-confirm button {
+  padding: 2px 6px;
+}
+
+/* 编辑模式 */
+.session-edit {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.session-edit input {
+  flex: 1;
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--color-text);
+  outline: none;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.edit-actions button {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}

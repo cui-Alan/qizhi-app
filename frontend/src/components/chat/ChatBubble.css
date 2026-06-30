@@ -1,0 +1,189 @@
+/* 企智 · ChatBubble.css */
+
+.chat-bubble {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  max-width: 85%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 用户消息 - 右侧 */
+.chat-bubble-user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+/* AI消息 - 左侧 */
+.chat-bubble-assistant {
+  margin-right: auto;
+}
+
+/* 系统消息 - 居中 */
+.chat-bubble-system {
+  margin: 8px auto;
+  max-width: 70%;
+  justify-content: center;
+}
+
+/* 头像 */
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+}
+
+.chat-bubble-user .chat-avatar {
+  background: var(--color-primary);
+}
+
+.chat-bubble-assistant .chat-avatar {
+  background: var(--color-secondary);
+}
+
+/* 消息内容 */
+.chat-bubble-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-role-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.chat-bubble-body {
+  background: var(--color-surface);
+  padding: 12px 16px;
+  border-radius: 16px;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-bubble-user .chat-bubble-body {
+  background: var(--color-primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-assistant .chat-bubble-body {
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-system .chat-bubble-body {
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  text-align: center;
+}
+
+/* 底部操作栏 */
+.chat-bubble-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.chat-bubble-user .chat-bubble-footer {
+  justify-content: flex-end;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.chat-bubble:hover .chat-actions {
+  opacity: 1;
+}
+
+.chat-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.chat-actions button:hover {
+  background: var(--color-surface-hover);
+}
+
+/* 代码块 */
+.chat-code-block {
+  position: relative;
+  background: var(--color-bg-code, #1e1e2e);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.chat-code-block code {
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.chat-code-block .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--color-surface);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.chat-code-block .copy-btn:hover {
+  opacity: 1;
+}
+
+/* 行内代码 */
+.chat-inline-code {
+  background: var(--color-bg-code, #1e1e2e);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 0.9em;
+}
+
+/* 流式输出光标 */
+.cursor-blink {
+  animation: blink 1s infinite;
+  color: var(--color-primary);
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 流式文本 */
+.streaming-text {
+  color: var(--color-text);
+}
