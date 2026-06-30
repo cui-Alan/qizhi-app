@@ -1,7 +1,26 @@
 import { NextRequest } from "next/server";
 import { streamInference } from "@/lib/ai/connector";
 
-// POST /api/messages/stream — 流式 AI 推理 (SSE)
+// ── 知识库检索 ──
+async function searchKnowledge(query: string): Promise<string> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    // Simple keyword search on kb_documents
+    const resp = await fetch(
+      `${supabaseUrl}/rest/v1/kb_documents?select=title,content_preview&or=(title.ilike.*${encodeURIComponent(query)}*,content_preview.ilike.*${encodeURIComponent(query)}*)&limit=3`,
+      { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } }
+    );
+    if (!resp.ok) return "";
+    const docs = await resp.json() as { title: string; content_preview: string }[];
+    if (!docs.length) return "";
+
+    return docs.map((d, i) => `[知识${i + 1}] ${d.title}\n${d.content_preview?.slice(0, 300)}`).join("\n\n");
+  } catch { return ""; }
+}
+
+// POST /api/messages/stream — 流式 AI 推理 + RAG (SSE)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -16,10 +35,15 @@ export async function POST(request: NextRequest) {
 
     const defaultModel = process.env.DEFAULT_MODEL || "DeepSeek-R1-Distill-Qwen-32B-AWQ";
 
+    // RAG: 搜索知识库
+    const kbContext = await searchKnowledge(content);
+    const systemPrompt = "你是企智 QiZhi AI 助手，用中文回答，专业而简洁。" +
+      (kbContext ? `\n\n📚 相关知识库内容:\n${kbContext}\n\n请基于以上知识库内容回答问题，并标注来源。` : "");
+
     const chatMessages = [
       {
         role: "system" as const,
-        content: "你是企智 QiZhi AI 助手，基于 OpenClaw + Hermes 架构。用中文回答，专业而简洁。",
+        content: systemPrompt,
       },
       ...(history || []).map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
