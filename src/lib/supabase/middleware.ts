@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
 
   // Allow public routes (no auth required)
   const { pathname } = request.nextUrl;
-  const publicPaths = ["/login", "/auth", "/api"];
+  const publicPaths = ["/login", "/register", "/auth", "/api"];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/";
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
