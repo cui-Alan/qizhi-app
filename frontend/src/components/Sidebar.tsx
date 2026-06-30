@@ -7,7 +7,7 @@ import React from 'react';
 
 interface SidebarProps {
   currentPage: string;
-  onNavigate: (page: 'flows' | 'monitor' | 'settings' | 'admin') => void;
+  onNavigate: (page: 'flows' | 'monitor' | 'settings' | 'admin' | 'sessions') => void;
   userRole?: string | null;
 }
 
@@ -63,6 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, userRole }) 
             <span>用户管理</span>
           </button>
         )}
+        <button
+          className={`nav-item ${currentPage === 'sessions' ? 'active' : ''}`}
+          onClick={() => onNavigate('sessions')}
+        >
+          <span className="nav-icon">💬</span>
+          <span>会话</span>
+        </button>
       </nav>
 
       {/* 工作流列表 */}

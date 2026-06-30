@@ -6,7 +6,7 @@
 import React from 'react';
 import './TopBar.css';
 
-type Page = 'flows' | 'monitor' | 'settings' | 'admin';
+type Page = 'flows' | 'monitor' | 'settings' | 'admin' | 'sessions';
 
 interface TopBarProps {
   currentPage: Page;
