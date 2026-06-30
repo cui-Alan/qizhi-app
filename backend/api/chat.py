@@ -87,6 +87,16 @@ async def build_system_prompt() -> str:
     except Exception:
         pass
 
+    # L5 Obsidian 知识库
+    try:
+        from memory.layers.layer5_obsidian import ObsidianMemory
+        obsidian = ObsidianMemory()
+        obsidian_context = obsidian.build_context()
+        if obsidian_context:
+            parts.append(obsidian_context)
+    except Exception:
+        pass
+
     # 基础企智设定
     parts.append(
         "[企智 · Qizhi]\n"
@@ -199,3 +209,60 @@ async def chat_status():
         "hermes_connected": HERMES_BASE_URL,
         "memory_system": "6-layer active",
     }
+
+
+# ===== L5 Obsidian 知识库 API =====
+
+@router.get("/obsidian/summary")
+async def obsidian_summary():
+    """Obsidian 知识库总览"""
+    try:
+        from memory.layers.layer5_obsidian import ObsidianMemory
+        obsidian = ObsidianMemory()
+        return obsidian.get_memory_summary()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/obsidian/search")
+async def obsidian_search(q: str = "", limit: int = 5):
+    """搜索 Obsidian 知识库"""
+    try:
+        from memory.layers.layer5_obsidian import ObsidianMemory
+        obsidian = ObsidianMemory()
+        results = obsidian.search(q, max_results=limit)
+        return {
+            "query": q,
+            "results": [
+                {
+                    "title": r.title,
+                    "file": r.file_path.name,
+                    "tags": r.tags,
+                    "body_preview": r.body[:300],
+                    "modified": r.modified.isoformat() if r.modified else None,
+                }
+                for r in results
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/obsidian/upsert")
+async def obsidian_upsert(
+    category: str = "",
+    key: str = "",
+    value: str = "",
+    tags: str = "",
+):
+    """写入新事实到 Obsidian 个人记忆（表单参数）"""
+    try:
+        from memory.layers.layer5_obsidian import ObsidianMemory
+        obsidian = ObsidianMemory()
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+        success = obsidian.upsert_fact(category, key, value, tag_list)
+        if success:
+            return {"success": True, "message": "已写入 Obsidian 个人记忆"}
+        return {"success": False, "message": "写入失败，请检查文件权限"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

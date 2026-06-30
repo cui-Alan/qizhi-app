@@ -11,7 +11,6 @@ import asyncio
 
 from engine.parser import WorkflowParser
 from engine.executor import WorkflowExecutor, ExecutionContext
-from engine.nodes import get_handlers
 from api.chat import router as chat_router
 
 app = FastAPI(
@@ -32,13 +31,15 @@ app.add_middleware(
 # 挂载 Chat AI 路由（接入 Hermes Gateway + 6层记忆）
 app.include_router(chat_router)
 
-# 全局执行器（初始化节点处理器）
+# 全局执行器（类注册模式）
 executor: Optional[WorkflowExecutor] = None
 
 def _get_executor() -> WorkflowExecutor:
     global executor
     if executor is None:
-        executor = WorkflowExecutor(node_handlers=get_handlers())
+        from engine.nodes import register_all
+        executor = WorkflowExecutor()
+        register_all(executor)
     return executor
 
 
