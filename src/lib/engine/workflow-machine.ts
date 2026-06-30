@@ -195,6 +195,15 @@ async function executeApproval(step: StepDefinition, ctx: ExecutionContext) {
     }
   );
 
+  // 立即推送审批等待事件，让前端能实时显示"等待审批"状态
+  emit({
+    type: "approval.pending",
+    stepId: step.id,
+    approvalId: approval.id,
+    assignedTo,
+    message: step.config?.message as string || "请审批",
+  });
+
   // 轮询等待审批结果（同步阻塞直到审批完成或超时）
   const resolved = await pollApproval(ctx.executionId, step.id, timeoutMs);
 

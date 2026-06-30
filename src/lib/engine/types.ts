@@ -81,6 +81,7 @@ export type ExecutionEvent =
   | { type: "step.compensating"; stepId: string; rollbackTo: string }
   | { type: "workflow.paused"; executionId: string; atStep: string }
   | { type: "workflow.resumed"; executionId: string }
+  | { type: "approval.pending"; stepId: string; approvalId: string; assignedTo: string; message: string }
   | { type: "workflow.completed"; executionId: string; results: Map<string, StepResult> }
   | { type: "workflow.failed"; executionId: string; error: string }
   | { type: "workflow.cancelled"; executionId: string };
