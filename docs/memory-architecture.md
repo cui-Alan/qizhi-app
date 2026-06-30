@@ -52,15 +52,6 @@ Hermes Gateway ←── 企智调用 REST API ←── STATE.DB 查询
 用户消息 → L2会话 → L3技能 → L1持久记忆 → L4知识库 → L5 注入 AI
 ```
 
-## 与 WorkBuddy 的区别
-
-| 维度 | WorkBuddy | 企智 QiZhi |
-|------|-----------|------------|
-| Obsidian 接入 | 通过 MCP Bridge 中转 | **直接读文件系统** `.md` 文件 |
-| Hermes 状态 | 通过 Bridge KV | **直接调 Gateway REST API** |
-| 架构层数 | 含中间层 | 去掉 Bridge，5 层 |
-| 复杂度 | 高 | 低 |
-
 ## 变更记录
 
 | 日期 | 变更 |
