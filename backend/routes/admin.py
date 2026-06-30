@@ -23,7 +23,7 @@ from db.user_service import (
 )
 from middleware.rbac import require_admin, require_super_admin
 
-router = APIRouter(prefix="/api/v1/admin", tags=["管理员"])
+router = APIRouter(prefix="/v1/admin", tags=["管理员"])
 
 # ===== 请求/响应模型 =====
 

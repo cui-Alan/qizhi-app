@@ -26,7 +26,7 @@ from db.user_service import (
     generate_temp_password,
 )
 
-router = APIRouter(prefix="/api/v1/auth", tags=["认证"])
+router = APIRouter(prefix="/v1/auth", tags=["认证"])
 
 
 # ===== 请求/响应模型 =====

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "qizhi-app-d7gfgvcmjb11f8ef0",
+  "functionRoot": ".",
+  "functions": [
+    {
+      "name": "qizhi-backend",
+      "timeout": 60,
+      "runtime": "Python3.9",
+      "memorySize": 256,
+      "handler": "main.handler",
+      "httpFn": true,
+      "envVariables": {
+        "SUPABASE_URL": "https://lbbnxfcijckkxuxfbctl.supabase.co",
+        "JWT_SECRET": "qizhi-secret-change-in-production-2026"
+      }
+    }
+  ]
+}

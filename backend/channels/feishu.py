@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.session_service import get_session_service
 
-router = APIRouter(prefix="/api/v1/channels/feishu", tags=["飞书消息通道"])
+router = APIRouter(prefix="/v1/channels/feishu", tags=["飞书消息通道"])
 
 
 # ===== 配置 =====

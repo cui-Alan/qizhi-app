@@ -25,7 +25,7 @@ from services.session_service import (
 )
 from routes.auth import get_current_user
 
-router = APIRouter(prefix="/api/v1/sessions", tags=["会话"])
+router = APIRouter(prefix="/v1/sessions", tags=["会话"])
 
 
 # ===== 请求/响应模型 =====
