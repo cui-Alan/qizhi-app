@@ -338,6 +338,124 @@ function ModelSettings() {
   );
 }
 
+// ── 智能体设置 ─────────────────────────────────────────────
+function AgentSettings() {
+  const [personality, setPersonality] = useState("professional");
+  const [style, setStyle] = useState("concise");
+  const [autoApprove, setAutoApprove] = useState(false);
+
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">🤖 智能体设置</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-3">Agent 人格</h3>
+          <div className="flex gap-3">
+            {[{ id: "professional", label: "👔 专业", desc: "严谨正式" }, { id: "friendly", label: "😊 友好", desc: "轻松活泼" }, { id: "creative", label: "🎨 创意", desc: "天马行空" }].map(p => (
+              <button key={p.id} onClick={() => setPersonality(p.id)}
+                className={`flex-1 p-3 rounded-xl border-2 text-left ${personality === p.id ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-zinc-200 dark:border-zinc-700"}`}>
+                <div className="text-sm font-medium">{p.label}</div><div className="text-xs text-zinc-500">{p.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-3">对话风格</h3>
+          <div className="flex gap-2">
+            {[{ id: "concise", label: "简洁" }, { id: "detailed", label: "详细" }, { id: "balanced", label: "均衡" }].map(s => (
+              <button key={s.id} onClick={() => setStyle(s.id)}
+                className={`px-4 py-2 rounded-lg text-sm ${style === s.id ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-800"}`}>{s.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border flex items-center justify-between">
+          <div><h3 className="text-sm font-medium">自动审批</h3><p className="text-xs text-zinc-500">低风险任务无需人工审批</p></div>
+          <button onClick={() => setAutoApprove(!autoApprove)}
+            className={`w-11 h-6 rounded-full transition ${autoApprove ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-600"}`}>
+            <div className={`w-5 h-5 bg-white rounded-full shadow transition ml-0.5 ${autoApprove ? "translate-x-5" : ""}`} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 安全中心 ─────────────────────────────────────────────
+function SecuritySettings() {
+  const [oldPw, setOldPw] = useState(""); const [newPw, setNewPw] = useState(""); const [twoFa, setTwoFa] = useState(false);
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">🔒 安全中心</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-3">修改密码</h3>
+          <div className="space-y-2">
+            <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder="旧密码" className="w-full px-3 py-2 text-sm rounded-lg border outline-none" />
+            <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="新密码" className="w-full px-3 py-2 text-sm rounded-lg border outline-none" />
+            <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">更新密码</button>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border flex items-center justify-between">
+          <div><h3 className="text-sm font-medium">双因素认证</h3><p className="text-xs text-zinc-500">登录时需要额外验证</p></div>
+          <button onClick={() => setTwoFa(!twoFa)} className={`w-11 h-6 rounded-full transition ${twoFa ? "bg-blue-600" : "bg-zinc-300"}`}><div className={`w-5 h-5 bg-white rounded-full shadow ml-0.5 transition ${twoFa ? "translate-x-5" : ""}`} /></button>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">登录日志</h3>
+          {[{ ip: "192.168.1.1", time: "2026-06-30 12:00", device: "MacBook Pro" }, { ip: "10.0.0.5", time: "2026-06-29 09:30", device: "iPhone 15" }].map((log, i) => (
+            <div key={i} className="flex justify-between py-2 text-sm border-b last:border-0"><span className="text-zinc-500">{log.device}</span><span className="text-zinc-400 text-xs">{log.ip} · {log.time}</span></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 个性化 ─────────────────────────────────────────────
+function PersonalizationSettings() {
+  const [commands, setCommands] = useState([{ id: "1", trigger: "/summary", action: "生成今日工作摘要" }, { id: "2", trigger: "/code", action: "代码审查当前文件" }]);
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">✨ 个性化</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-3">快捷指令</h3>
+          {commands.map(c => (
+            <div key={c.id} className="flex items-center gap-2 py-2 text-sm border-b last:border-0">
+              <code className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 rounded text-xs font-mono">{c.trigger}</code>
+              <span className="text-zinc-500 flex-1">{c.action}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 数据管理 ─────────────────────────────────────────────
+function DataSettings() {
+  return (
+    <div className="h-full overflow-y-auto p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6">📊 数据管理</h2>
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">数据导出</h3>
+          <p className="text-xs text-zinc-500 mb-3">导出所有对话记录、工作流和设置</p>
+          <button className="px-4 py-2 text-sm border rounded-lg hover:bg-zinc-50">导出 JSON</button>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">缓存清理</h3>
+          <p className="text-xs text-zinc-500 mb-3">清理本地缓存和临时文件</p>
+          <button className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50">清理缓存</button>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border">
+          <h3 className="text-sm font-medium mb-2">历史记录</h3>
+          <p className="text-xs text-zinc-500">当前存储 {0} 条消息，{0} 个工作流</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 主设置页 ─────────────────────────────────────────────
 export default function SettingsPage() {
   const params = useParams();
@@ -347,6 +465,10 @@ export default function SettingsPage() {
   if (section === "memory") return <MemorySettings />;
   if (section === "appearance") return <AppearanceSettings />;
   if (section === "models") return <ModelSettings />;
+  if (section === "agent") return <AgentSettings />;
+  if (section === "security") return <SecuritySettings />;
+  if (section === "personalization") return <PersonalizationSettings />;
+  if (section === "data") return <DataSettings />;
 
   return (
     <div className="h-full flex flex-col items-center justify-center text-zinc-400">
