@@ -128,7 +128,30 @@ CREATE TABLE workflow_approvals (
 );
 
 -- ============================================================
--- 7. Tasks
+-- 7. Spaces
+-- ============================================================
+CREATE TABLE IF NOT EXISTS spaces (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  role TEXT DEFAULT 'admin' CHECK (role IN ('admin', 'member', 'viewer')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_spaces_owner ON spaces(owner_id);
+
+CREATE TABLE IF NOT EXISTS space_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  space_id UUID NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'member' CHECK (role IN ('admin', 'member', 'viewer')),
+  joined_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(space_id, user_id)
+);
+CREATE INDEX idx_space_members_space ON space_members(space_id);
+
+-- ============================================================
+-- 8. Tasks
 -- ============================================================
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

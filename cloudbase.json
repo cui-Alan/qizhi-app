@@ -2,6 +2,7 @@
   "envId": "qizhi-app-d7gfgvcmjb11f8ef0",
   "framework": {
     "name": "qizhi-app",
+    "frameworkVersion": "3.0.0",
     "plugins": {
       "node": {
         "path": "."
